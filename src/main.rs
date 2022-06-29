@@ -3,6 +3,9 @@ use std::fmt;
 use std::rc::Rc;
 
 const WHITE_PAWN: char  = '\u{2659}';
+const WHITE_ROOK: char  = '\u{2656}';
+const WHITE_KNIGHT: char  = '\u{2658}';
+const WHITE_BISHOP: char  = '\u{2657}';
 
 const BLACK_PAWN: char  = '\u{265F}';
 const BLACK_ROOK: char  = '\u{265C}';
@@ -10,6 +13,9 @@ const BLACK_KNIGHT: char  = '\u{265E}';
 const BLACK_BISHOP: char  = '\u{265D}';
 const BLACK_QUEEN: char  = '\u{265B}';
 const BLACK_KING: char  = '\u{265A}';
+
+const WHITE_QUEEN: char  = '\u{2655}';
+const WHITE_KING: char  = '\u{2654}';
 
 
 enum PLAYER {
@@ -163,7 +169,17 @@ fn main() {
     let black_knight2 = Knight {unicode_val: BLACK_KNIGHT,player: PLAYER::BLACK};
     let black_rook2 = Rook {unicode_val: BLACK_ROOK,player: PLAYER::BLACK};
     let black_pawn_rc = Rc::new(Pawn {unicode_val: BLACK_PAWN,player: PLAYER::BLACK});
-    
+
+    let white_pawn_rc = Rc::new(Pawn {unicode_val: WHITE_PAWN,player: PLAYER::WHITE});
+    let white_rook1 = Rook {unicode_val: WHITE_ROOK,player: PLAYER::WHITE};
+    let white_knight1 = Knight {unicode_val: WHITE_KNIGHT,player: PLAYER::WHITE};
+    let white_bishop1 = Bishop {unicode_val: WHITE_BISHOP,player: PLAYER::WHITE};
+    let white_queen = Queen {unicode_val: WHITE_QUEEN,player: PLAYER::WHITE};
+    let white_king = Queen {unicode_val: WHITE_KING,player: PLAYER::WHITE};
+    let white_bishop2 = Bishop {unicode_val: WHITE_BISHOP,player: PLAYER::WHITE};
+    let white_knight2 = Knight {unicode_val: WHITE_KNIGHT,player: PLAYER::WHITE};
+    let white_rook2 = Rook {unicode_val: WHITE_ROOK,player: PLAYER::WHITE};
+
     let mut pieces: Vec<Option<Rc<dyn GamePiece>>> = Vec::new();
     pieces.push(Some(Rc::new(black_rook1)));
     pieces.push(Some(Rc::new(black_knight1)));
@@ -176,9 +192,20 @@ fn main() {
     for x in 0 ..8 {
         pieces.push(Some(black_pawn_rc.clone()));
     }
-    for x in 0 ..33 {
+    for x in 0 ..32 {
         pieces.push(None);
     }
+    for x in 0 ..8 {
+        pieces.push(Some(white_pawn_rc.clone()));
+    }
+    pieces.push(Some(Rc::new(white_rook1)));
+    pieces.push(Some(Rc::new(white_knight1)));
+    pieces.push(Some(Rc::new(white_bishop1)));
+    pieces.push(Some(Rc::new(white_queen)));
+    pieces.push(Some(Rc::new(white_king)));
+    pieces.push(Some(Rc::new(white_bishop2)));
+    pieces.push(Some(Rc::new(white_knight2)));
+    pieces.push(Some(Rc::new(white_rook2)));
     let mut state = GameState {
         state: pieces,
         player_turn: PLAYER::WHITE
