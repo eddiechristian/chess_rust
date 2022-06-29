@@ -1,5 +1,6 @@
 use std::str;
 use std::fmt;
+use std::rc::Rc;
 
 const WHITE_PAWN: char  = '\u{2659}';
 
@@ -126,7 +127,7 @@ impl GamePiece for King{
  
 
 struct GameState{
-    state: Vec<Option<Box<dyn GamePiece>>>,
+    state: Vec<Option<Rc<dyn GamePiece>>>,
     player_turn: PLAYER
 }
 
@@ -161,19 +162,19 @@ fn main() {
     let black_bishop2 = Bishop {unicode_val: BLACK_BISHOP,player: PLAYER::BLACK};
     let black_knight2 = Knight {unicode_val: BLACK_KNIGHT,player: PLAYER::BLACK};
     let black_rook2 = Rook {unicode_val: BLACK_ROOK,player: PLAYER::BLACK};
-    let black_pawn = Pawn {unicode_val: BLACK_PAWN,player: PLAYER::BLACK};
+    let black_pawn_rc = Rc::new(Pawn {unicode_val: BLACK_PAWN,player: PLAYER::BLACK});
     
-    let mut pieces: Vec<Option<Box<dyn GamePiece>>> = Vec::new();
-    pieces.push(Some(Box::new(black_rook1)));
-    pieces.push(Some(Box::new(black_knight1)));
-    pieces.push(Some(Box::new(black_bishop1)));
-    pieces.push(Some(Box::new(black_queen)));
-    pieces.push(Some(Box::new(black_king)));
-    pieces.push(Some(Box::new(black_bishop2)));
-    pieces.push(Some(Box::new(black_knight2)));
-    pieces.push(Some(Box::new(black_rook2)));
-    for x in 0 ..9 {
-        pieces.push(Some(Box::new(black_pawn)));
+    let mut pieces: Vec<Option<Rc<dyn GamePiece>>> = Vec::new();
+    pieces.push(Some(Rc::new(black_rook1)));
+    pieces.push(Some(Rc::new(black_knight1)));
+    pieces.push(Some(Rc::new(black_bishop1)));
+    pieces.push(Some(Rc::new(black_queen)));
+    pieces.push(Some(Rc::new(black_king)));
+    pieces.push(Some(Rc::new(black_bishop2)));
+    pieces.push(Some(Rc::new(black_knight2)));
+    pieces.push(Some(Rc::new(black_rook2)));
+    for x in 0 ..8 {
+        pieces.push(Some(black_pawn_rc.clone()));
     }
     for x in 0 ..33 {
         pieces.push(None);
