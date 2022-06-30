@@ -1,3 +1,4 @@
+mod chess_errors;
 mod chess_notation_utilities;
 mod visual;
 
@@ -5,39 +6,34 @@ use visual::GameState;
 
 fn main() {
     let mut game_state = GameState::default();
-    println!("{}",game_state);
+    println!("{}", game_state);
 
-    if let Ok((from, to)) =  chess_notation_utilities::convert_move_notation_to_indexes("a8", "b8"){
+    if let Ok((from, to)) = chess_notation_utilities::convert_move_notation_to_indexes("a8", "b8") {
         game_state.move_piece(from, to);
-        println!("{}",game_state);
+        println!("{}", game_state);
     }
     // let spot = "b2";
-    // let bounds = chess_notation_utilities::get_bounds(spot, visual::PLAYER::BLACK); 
+    // let bounds = chess_notation_utilities::get_bounds(spot, visual::PLAYER::BLACK);
     // println!("{} bounds is\n{}", spot, bounds);
-    
-    let spot= "b2";
-    if let Ok(index) = chess_notation_utilities::notation_to_index(spot) {
-        if let Some(piece) = game_state.get_piece_at(index){
+
+    let spot = "B2".to_string().to_lowercase();
+    if let Ok(index) = chess_notation_utilities::notation_to_index(&spot) {
+        if let Some(piece) = game_state.get_piece_at(index) {
             println!("piece {}", piece.get_unicode_val());
-            if  piece.move_forward_one(spot, &game_state).is_ok()  {
+            if piece.move_forward_one(&spot, &game_state).is_ok() {
                 println!("good");
-            }else {
+            } else {
                 println!("oops");
             }
-            
         }
+    } else {
     }
-    else {
 
+    if let Err(x) = chess_errors::try_error(1) {
+        println!("{}", x);
     }
-    
-    
-    
+
     // game_state.move_piece("a8", "b8");
-    
-    // println!("{}",game_state);
-   
-    
-    
 
+    // println!("{}",game_state);
 }
