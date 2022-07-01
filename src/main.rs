@@ -49,10 +49,26 @@ impl Game {
         let deltax: i8 = (from_point.x as i8 - to_point.x as i8) as i8;
         let deltay: i8 = (from_point.y as i8 - to_point.y as i8) as i8;
         println!("deltaX: {:?} deltaY: {:?}", deltax, deltay );
-        if deltax ==0 && deltay < 0 {
+        if deltax == 0 && deltay < 0 {
             //down
-        } else if deltax ==0 && deltay > 0{
+            if deltay.abs() == 1 {
+                //move down one
+                if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
+                    if let Some(piece) = self.state.get_piece_at(index) {
+                        piece.move_down_one(to_spot, &self.state)?;
+                    }
+                }
+            }
+        } else if deltax == 0 && deltay > 0{
             //up
+            if deltay == 1 {
+                //move up one
+                if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
+                    if let Some(piece) = self.state.get_piece_at(index) {
+                        piece.move_up_one(to_spot, &self.state)?;
+                    }
+                }
+            }
         }else if deltax > 0 && deltay == 0{
             //left
         }else if deltax < 0 && deltay == 0{
@@ -133,7 +149,7 @@ fn main() {
     // if let Ok(index) = chess_notation_utilities::notation_to_index(&spot) {
     //     if let Some(piece) = game_state.get_piece_at(index) {
     //         println!("piece {}", piece.get_unicode_val());
-    //         if piece.move_forward_one(&spot, &game_state).is_ok() {
+    //         if piece. move_down_one(&spot, &game_state).is_ok() {
     //             println!("good");
     //         } else {
     //             println!("oops");
