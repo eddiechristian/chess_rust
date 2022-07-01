@@ -19,6 +19,7 @@ const BLACK_KING: char = '\u{265A}';
 const WHITE_QUEEN: char = '\u{2655}';
 const WHITE_KING: char = '\u{2654}';
 
+#[derive(Copy, Clone, PartialEq)]
 pub enum PLAYER {
     WHITE,
     BLACK,
@@ -26,8 +27,9 @@ pub enum PLAYER {
 
 pub trait GamePiece {
     fn get_unicode_val(&self) -> char;
-    fn move_forward_one(&self, pos: &str, state: &GameState) -> Result<(), chess_errors::ChessErrors>;
-    fn move_backward_one(&self, pos: &str) -> Result<(), chess_errors::ChessErrors>;
+    fn move_forward_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
+    fn move_backward_one(&self, pos: &str) -> Result<String, chess_errors::ChessErrors>;
+    fn get_player(&self) -> PLAYER;
 }
 
 pub struct Pawn {
@@ -44,28 +46,40 @@ impl GamePiece for Pawn {
     fn get_unicode_val(&self) -> char {
         self.unicode_val
     }
+    fn get_player(&self) -> PLAYER{
+        self.player
+    }
 
-    fn move_forward_one(&self, from_pos: &str, state: &GameState) -> Result<(), chess_errors::ChessErrors> {
-        match self.player {
-            PLAYER::WHITE => {
-                if let Some(to_pos_array) = chess_notation_utilities::get_bounds(from_pos)?.top {
-                    let to_pos = std::str::from_utf8(&to_pos_array)?;
-                    println!("{:?}", to_pos);
-                    if let Ok(index) = chess_notation_utilities::notation_to_index(to_pos) {
-                        if let Some(x) = state.get_piece_at(index) {
-                        } else {
-                        }
-                        return Ok(());
+    fn move_forward_one(&self, from_pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+        let to_pos_array_opt = match self.player {
+            PLAYER::WHITE => chess_notation_utilities::get_bounds(from_pos)?.top,
+            PLAYER::BLACK => chess_notation_utilities::get_bounds(from_pos)?.bottom,
+        };
+        if let Some(to_pos_array) = to_pos_array_opt {
+            let to_pos = std::str::from_utf8(&to_pos_array)?;
+            if let Ok(index) = chess_notation_utilities::notation_to_index(to_pos) {
+                if let Some(piece_at_move_to) = state.get_piece_at(index) {
+                    if piece_at_move_to.get_player() == self.player {
+                        //there is a piece in too pos, is it same player
+                        let msg = format!("Ilegal move");
+                        return Err(chess_errors::ChessErrors::InvalidMove(msg));
                     } else {
+                        return Ok((to_pos.to_string()));
                     }
                 } else {
+                    // vacant to pos
+                    return Ok((to_pos.to_string()));
                 }
+            } else {
+                let msg = format!("parsed to pos {} is not valid",to_pos);
+                return Err(chess_errors::ChessErrors::InvalidNotation(msg));
             }
-            PLAYER::BLACK => {}
+        } else {
+            let msg = format!("Invalid notation");
+            return Err(chess_errors::ChessErrors::InvalidNotation(msg));
         }
-        Ok(())
     }
-    fn move_backward_one(&self, pos: &str) -> Result<(), chess_errors::ChessErrors> {
+    fn move_backward_one(&self, pos: &str) -> Result<String, chess_errors::ChessErrors> {
         !unimplemented!()
     }
 }
@@ -84,10 +98,13 @@ impl GamePiece for Rook {
     fn get_unicode_val(&self) -> char {
         self.unicode_val
     }
-    fn move_forward_one(&self, pos: &str, state: &GameState) -> Result<(), chess_errors::ChessErrors> {
+    fn get_player(&self) -> PLAYER{
+        self.player
+    }
+    fn move_forward_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
         !unimplemented!()
     }
-    fn move_backward_one(&self, pos: &str) -> Result<(), chess_errors::ChessErrors> {
+    fn move_backward_one(&self, pos: &str) -> Result<String, chess_errors::ChessErrors> {
         !unimplemented!()
     }
 }
@@ -107,10 +124,13 @@ impl GamePiece for Knight {
     fn get_unicode_val(&self) -> char {
         self.unicode_val
     }
-    fn move_forward_one(&self, pos: &str, state: &GameState) -> Result<(), chess_errors::ChessErrors> {
+    fn get_player(&self) -> PLAYER{
+        self.player
+    }
+    fn move_forward_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
         !unimplemented!()
     }
-    fn move_backward_one(&self, pos: &str) -> Result<(), chess_errors::ChessErrors> {
+    fn move_backward_one(&self, pos: &str) -> Result<String, chess_errors::ChessErrors> {
         !unimplemented!()
     }
 }
@@ -130,10 +150,13 @@ impl GamePiece for Bishop {
     fn get_unicode_val(&self) -> char {
         self.unicode_val
     }
-    fn move_forward_one(&self, pos: &str, state: &GameState) -> Result<(), chess_errors::ChessErrors> {
+    fn get_player(&self) -> PLAYER{
+        self.player
+    }
+    fn move_forward_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
         !unimplemented!()
     }
-    fn move_backward_one(&self, pos: &str) -> Result<(), chess_errors::ChessErrors> {
+    fn move_backward_one(&self, pos: &str) -> Result<String, chess_errors::ChessErrors> {
         !unimplemented!()
     }
 }
@@ -153,10 +176,13 @@ impl GamePiece for Queen {
     fn get_unicode_val(&self) -> char {
         self.unicode_val
     }
-    fn move_forward_one(&self, pos: &str, state: &GameState) -> Result<(), chess_errors::ChessErrors> {
+    fn get_player(&self) -> PLAYER{
+        self.player
+    }
+    fn move_forward_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
         !unimplemented!()
     }
-    fn move_backward_one(&self, pos: &str) -> Result<(), chess_errors::ChessErrors> {
+    fn move_backward_one(&self, pos: &str) -> Result<String, chess_errors::ChessErrors> {
         !unimplemented!()
     }
 }
@@ -176,10 +202,13 @@ impl GamePiece for King {
     fn get_unicode_val(&self) -> char {
         self.unicode_val
     }
-    fn move_forward_one(&self, pos: &str, state: &GameState) -> Result<(), chess_errors::ChessErrors> {
+    fn get_player(&self) -> PLAYER{
+        self.player
+    }
+    fn move_forward_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
         !unimplemented!()
     }
-    fn move_backward_one(&self, pos: &str) -> Result<(), chess_errors::ChessErrors> {
+    fn move_backward_one(&self, pos: &str) -> Result<String, chess_errors::ChessErrors> {
         !unimplemented!()
     }
 }
@@ -191,19 +220,24 @@ pub struct GameState {
 
 impl fmt::Display for GameState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "========================\n")?;
+        let mut row: u8 = 8;
         let mut ctr: u8 = 0;
+        write!(f, "8")?;
         for piece_opt in &self.state {
-            ctr += 1;
             match piece_opt {
                 Some(piece) => write!(f, "|{}", piece.get_unicode_val())?,
                 None => write!(f, "| ")?,
             }
-            if ctr % 8 == 0 {
-                write!(f, "|\n")?
+            ctr += 1;
+            if ctr % 8 ==0 {
+                row -= 1;
+                if row != 0 {
+                    write!(f, "|\n{}", row)?;
+                }
             }
+            
         }
-        write!(f, "\n")
+        write!(f, "\n  a b c d e f g h\n")
     }
 }
 

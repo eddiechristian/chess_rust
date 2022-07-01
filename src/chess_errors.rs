@@ -6,7 +6,7 @@ use std::str::Utf8Error;
 #[derive(Debug)]
 pub enum ChessErrors {
     InvalidNotation(String),
-    CantMoveUp(String),
+    InvalidMove(String),
     Utf8Error
 }
 
@@ -26,8 +26,8 @@ impl fmt::Display for ChessErrors {
             ChessErrors::InvalidNotation(x) => {
                 write!(f, "{} is invalid chess notation", x)
             }
-            ChessErrors::CantMoveUp(x) => {
-                write!(f, "Oh no, something bad went down")
+            ChessErrors::InvalidMove(x) => {
+                write!(f, "{} is ilegal move", x)
             }
             _ => {
                 write!(f, "ddddd")
