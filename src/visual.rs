@@ -51,33 +51,7 @@ impl GamePiece for Pawn {
     }
 
     fn move_forward_one(&self, from_pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        let to_pos_array_opt = match self.player {
-            PLAYER::WHITE => chess_notation_utilities::get_bounds(from_pos)?.top,
-            PLAYER::BLACK => chess_notation_utilities::get_bounds(from_pos)?.bottom,
-        };
-        if let Some(to_pos_array) = to_pos_array_opt {
-            let to_pos = std::str::from_utf8(&to_pos_array)?;
-            if let Ok(index) = chess_notation_utilities::notation_to_index(to_pos) {
-                if let Some(piece_at_move_to) = state.get_piece_at(index) {
-                    if piece_at_move_to.get_player() == self.player {
-                        //there is a piece in too pos, is it same player
-                        let msg = format!("Ilegal move");
-                        return Err(chess_errors::ChessErrors::InvalidMove(msg));
-                    } else {
-                        return Ok((to_pos.to_string()));
-                    }
-                } else {
-                    // vacant to pos
-                    return Ok((to_pos.to_string()));
-                }
-            } else {
-                let msg = format!("parsed to pos {} is not valid",to_pos);
-                return Err(chess_errors::ChessErrors::InvalidNotation(msg));
-            }
-        } else {
-            let msg = format!("Invalid notation");
-            return Err(chess_errors::ChessErrors::InvalidNotation(msg));
-        }
+        !unimplemented!()
     }
     fn move_backward_one(&self, pos: &str) -> Result<String, chess_errors::ChessErrors> {
         !unimplemented!()

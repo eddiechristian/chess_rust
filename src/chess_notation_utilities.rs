@@ -1,10 +1,9 @@
 use crate::chess_errors;
-use crate::visual;
-use core::f64::RADIX;
+
 use std::convert::TryInto;
 use std::fmt;
 
-pub struct bounds {
+pub struct Bounds {
     pub top: Option<[u8; 2]>,
     pub bottom: Option<[u8; 2]>,
     pub left: Option<[u8; 2]>,
@@ -14,8 +13,13 @@ pub struct bounds {
     pub bottom_left_diag: Option<[u8; 2]>,
     pub bottom_right_diag: Option<[u8; 2]>,
 }
+#[derive(Copy, Clone, PartialEq)]
+pub struct Point {
+    pub x: u8,
+    pub y: u8
+}
 
-impl fmt::Display for bounds {
+impl fmt::Display for Bounds {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(c) = self.top {
             let a = std::str::from_utf8(&c).unwrap();
@@ -81,7 +85,7 @@ pub fn check_for_valid_notation(spot: &str) -> Result<bool, chess_errors::ChessE
     }
 }
 
-pub fn get_bounds(spot: &str) -> Result<bounds, chess_errors::ChessErrors> {
+pub fn get_bounds(spot: &str) -> Result<Bounds, chess_errors::ChessErrors> {
     check_for_valid_notation(spot)?;
     let top = {
         match &spot.chars().nth(1).unwrap() {
@@ -172,7 +176,7 @@ pub fn get_bounds(spot: &str) -> Result<bounds, chess_errors::ChessErrors> {
     let (top_left_diag, top_right_diag, bottom_left_diag, bottom_right_diag) =
         (None, None, None, None);
 
-    let bounds = bounds {
+    let bounds = Bounds {
         top: top,
         bottom: bottom,
         left: left,
@@ -185,7 +189,7 @@ pub fn get_bounds(spot: &str) -> Result<bounds, chess_errors::ChessErrors> {
    Ok(bounds)
 }
 
-pub fn convert_col(spot: &str) -> Result<usize, &'static str> {
+pub fn convert_col(spot: &str) -> Result<usize, chess_errors::ChessErrors> {
     let col = match spot.chars().nth(0) {
         Some(first_char) => match first_char {
             'a' => Ok(0),
@@ -196,15 +200,21 @@ pub fn convert_col(spot: &str) -> Result<usize, &'static str> {
             'f' => Ok(5),
             'g' => Ok(6),
             'h' => Ok(7),
-            _ => Err("not valid move notation"),
+            _ => {
+                let msg = format!("Invalid notation");
+                Err(chess_errors::ChessErrors::InvalidNotation(msg))
+            },
         },
-        None => Err("not valid move notation"),
+        None => {
+            let msg = format!("Invalid notation");
+            Err(chess_errors::ChessErrors::InvalidNotation(msg))
+        },
     }?;
 
     Ok(col)
 }
 
-pub fn convert_row(spot: &str) -> Result<usize, &'static str> {
+pub fn convert_row(spot: &str) -> Result<usize, chess_errors::ChessErrors> {
     let row = match spot.chars().nth(1) {
         Some(first_char) => match first_char {
             '8' => Ok(0),
@@ -215,15 +225,21 @@ pub fn convert_row(spot: &str) -> Result<usize, &'static str> {
             '3' => Ok(5),
             '2' => Ok(6),
             '1' => Ok(7),
-            _ => Err("not valid move notation"),
+            _ =>{
+                let msg = format!("Invalid notation");
+                Err(chess_errors::ChessErrors::InvalidNotation(msg))
+            },
         },
-        None => Err("not valid move notation"),
+        None => {
+            let msg = format!("Invalid notation");
+            Err(chess_errors::ChessErrors::InvalidNotation(msg))
+        },
     }?;
 
     Ok(row)
 }
 
-pub fn notation_to_index(spot: &str) -> Result<usize, &'static str> {
+pub fn notation_to_index(spot: &str) -> Result<usize, chess_errors::ChessErrors> {
     let col = convert_col(spot)?;
     let row = convert_row(spot)?;
     let index = (row * 8) + col;
@@ -233,9 +249,22 @@ pub fn notation_to_index(spot: &str) -> Result<usize, &'static str> {
 pub fn convert_move_notation_to_indexes(
     from_spot: &str,
     to_spot: &str,
-) -> Result<(usize, usize), &'static str> {
+) -> Result<(usize, usize), chess_errors::ChessErrors> {
     let from_index = notation_to_index(from_spot)?;
     let to_index = notation_to_index(to_spot)?;
 
     Ok((from_index, to_index))
+}
+
+pub fn convert_move_notation_to_xy(
+    from_spot: &str,
+    to_spot: &str,
+) -> Result<(Point, Point), chess_errors::ChessErrors> {
+    let from_col:u8  = (convert_col(from_spot)?) as u8;
+    let from_row:u8 = convert_row(from_spot)?as u8;
+    let to_col:u8  = convert_col(to_spot)?as u8;
+    let to_row:u8 = convert_row(to_spot)?as u8;
+    let from_point = Point{x: from_col,y:from_row};
+    let to_point = Point{x: to_col,y: to_row};
+    Ok((from_point, to_point))
 }

@@ -1,4 +1,4 @@
-use std::error;
+
 use std::fmt;
 
 use std::error::Error;
@@ -6,6 +6,8 @@ use std::str::Utf8Error;
 #[derive(Debug)]
 pub enum ChessErrors {
     InvalidNotation(String),
+    WrongPlayer(String),
+    NoPiece(String),
     InvalidMove(String),
     Utf8Error
 }
@@ -26,8 +28,11 @@ impl fmt::Display for ChessErrors {
             ChessErrors::InvalidNotation(x) => {
                 write!(f, "{} is invalid chess notation", x)
             }
-            ChessErrors::InvalidMove(x) => {
-                write!(f, "{} is ilegal move", x)
+            ChessErrors::WrongPlayer(x) => {
+                write!(f, "wrong player at {}", x)
+            }
+            ChessErrors::NoPiece(x) => {
+                write!(f, "no piece at {}", x)
             }
             _ => {
                 write!(f, "ddddd")

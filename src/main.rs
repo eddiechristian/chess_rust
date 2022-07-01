@@ -22,14 +22,46 @@ impl Default for Game {
    
 }
 impl Game {
-    fn move_piece (&mut self ,chess_move: &str)->Result<(), chess_errors::ChessErrors> {
+    fn is_move_valid(&self, from_spot: &str, to_spot: &str, whos_turn: visual::PLAYER)->Result<(), chess_errors::ChessErrors> {
+        // first determine if piece at from is correct player.
+        if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
+            if let Some(piece) = self.state.get_piece_at(index) {
+                if piece.get_player() != whos_turn{
+                    let msg = format!("{}",from_spot);
+                    return Err(chess_errors::ChessErrors::WrongPlayer(msg));
+                }
+            } else {
+                let msg = format!("{}",from_spot);
+                return Err(chess_errors::ChessErrors::NoPiece(msg));
+            }
+        }
+
+        // the x and y deltas will tell what kind of move it is
+        
+        let (from_point, to_point) = chess_notation_utilities::convert_move_notation_to_xy(from_spot,to_spot)?;
+        let deltax: i8 = (from_point.x as i8 - to_point.x as i8) as i8;
+        let deltay: i8 = (from_point.y as i8 - to_point.y as i8) as i8;
+        println!("deltaX: {:?} deltaY: {:?}", deltax, deltay );
+        if deltax ==0 && deltay < 0 {
+            //down
+        } else if deltax ==0 && deltay > 0{
+            //up
+        }else if deltax > 0 && deltay == 0{
+            //left
+        }else if deltax < 0 && deltay == 0{
+            //right
+        }
+        Ok(())
+    }
+
+    fn move_piece (&mut self ,chess_move: &str, whos_turn: visual::PLAYER)->Result<(), chess_errors::ChessErrors> {
         let mut the_move = chess_move.to_lowercase();
         let index_of_dash = the_move.find("-");
         if let Some(index_of_dash) = the_move.find("-") {
             let from_spot = &the_move[0..index_of_dash];
             let to_spot = &the_move[index_of_dash+1..];
             if let Ok((from, to)) = chess_notation_utilities::convert_move_notation_to_indexes(from_spot,to_spot) {
-                //TODO test move for valid
+                self.is_move_valid(from_spot, to_spot, whos_turn)?;
                 self.state.move_piece(from, to);
             }
         }else {
@@ -64,11 +96,15 @@ fn main() {
         if move_notation == "quit" {
             break
         }
-        chess_game.move_piece(&move_notation);
-        chess_game.player_turn = match chess_game.player_turn {
-            visual::PLAYER::WHITE => visual::PLAYER::BLACK,
-            visual::PLAYER::BLACK => visual::PLAYER::WHITE,
-        };
+        if let Err(e) =chess_game.move_piece(&move_notation, chess_game.player_turn){
+            println!("{}",e);
+        }else {
+            chess_game.player_turn = match chess_game.player_turn {
+                visual::PLAYER::WHITE => visual::PLAYER::BLACK,
+                visual::PLAYER::BLACK => visual::PLAYER::WHITE,
+            };
+        }
+       
         
     
     }
