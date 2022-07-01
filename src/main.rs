@@ -8,14 +8,12 @@ use visual::GameState;
 
 struct Game {
     state: GameState,
-    player_turn: visual::PLAYER,
     turn_history: Vec<String>,
 }
 impl Default for Game {
     fn default() -> Self {
         Game {
             state:GameState::default(),
-            player_turn: visual::PLAYER::WHITE,
             turn_history: Vec::new(),
         }
     }
@@ -35,6 +33,15 @@ impl Game {
                 return Err(chess_errors::ChessErrors::NoPiece(msg));
             }
         }
+        //if too spot is current player its invalid
+        if let Ok(index) = chess_notation_utilities::notation_to_index(&to_spot) {
+            if let Some(piece) = self.state.get_piece_at(index) {
+                if piece.get_player() == whos_turn{
+                    let msg = format!("{}",to_spot);
+                    return Err(chess_errors::ChessErrors::PlayerPieceAlreadyThere(msg));
+                }
+            } 
+        }
 
         // the x and y deltas will tell what kind of move it is
         
@@ -51,6 +58,7 @@ impl Game {
         }else if deltax < 0 && deltay == 0{
             //right
         }
+        //check for current player in check
         Ok(())
     }
 
@@ -78,7 +86,7 @@ fn main() {
     while game_over == false {
         let mut move_notation=String::new();
         let prompt = {
-            match  chess_game.player_turn{
+            match  chess_game.state.player_turn{
                 visual::PLAYER::WHITE => format!("White's turn:(e.g a2-b2,or quit)").to_string(),
                 visual::PLAYER::BLACK => format!("Blacks's turn:(e.g a7-a6 or quit)").to_string(),
             }
@@ -96,10 +104,10 @@ fn main() {
         if move_notation == "quit" {
             break
         }
-        if let Err(e) =chess_game.move_piece(&move_notation, chess_game.player_turn){
+        if let Err(e) =chess_game.move_piece(&move_notation, chess_game.state.player_turn){
             println!("{}",e);
         }else {
-            chess_game.player_turn = match chess_game.player_turn {
+            chess_game.state.player_turn = match chess_game.state.player_turn {
                 visual::PLAYER::WHITE => visual::PLAYER::BLACK,
                 visual::PLAYER::BLACK => visual::PLAYER::WHITE,
             };

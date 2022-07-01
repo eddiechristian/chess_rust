@@ -51,6 +51,9 @@ impl GamePiece for Pawn {
     }
 
     fn move_forward_one(&self, from_pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+        //remember pawn can only attach diagonal
+        //check that here
+        
         !unimplemented!()
     }
     fn move_backward_one(&self, pos: &str) -> Result<String, chess_errors::ChessErrors> {
@@ -188,8 +191,8 @@ impl GamePiece for King {
 }
 
 pub struct GameState {
-    state: Vec<Option<Rc<dyn GamePiece>>>,
-    player_turn: PLAYER,
+    pub state: Vec<Option<Rc<dyn GamePiece>>>,
+    pub player_turn: PLAYER,
 }
 
 impl fmt::Display for GameState {

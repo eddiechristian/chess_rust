@@ -8,6 +8,7 @@ pub enum ChessErrors {
     InvalidNotation(String),
     WrongPlayer(String),
     NoPiece(String),
+    PlayerPieceAlreadyThere(String),
     InvalidMove(String),
     Utf8Error
 }
@@ -33,6 +34,9 @@ impl fmt::Display for ChessErrors {
             }
             ChessErrors::NoPiece(x) => {
                 write!(f, "no piece at {}", x)
+            }
+            ChessErrors::PlayerPieceAlreadyThere(x) => {
+                write!(f, "you have a  piece at {}", x)
             }
             _ => {
                 write!(f, "ddddd")
