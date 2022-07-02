@@ -27,8 +27,11 @@ pub enum PLAYER {
 
 pub trait GamePiece {
     fn get_unicode_val(&self) -> char;
-    fn  move_down_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
-    fn  move_up_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
+    fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
+    fn  move_up_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
+    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
+    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
+    fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
     fn get_player(&self) -> PLAYER;
 }
 
@@ -49,7 +52,14 @@ impl GamePiece for Pawn {
     fn get_player(&self) -> PLAYER{
         self.player
     }
-
+    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
+    }
+    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
+    }
     fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
         //remember pawn can only attach diagonal
         //check that here
@@ -82,7 +92,16 @@ impl GamePiece for Pawn {
                 }
             }
         }
-        Ok((to_spot.to_string()))
+        Ok(to_spot.to_string())
+    }
+    fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        if let Ok(index) = chess_notation_utilities::notation_to_index(&to_spot) {
+            if  state.get_piece_at(index).is_none() {
+                let msg = format!("{}",to_spot);
+                return Err(chess_errors::ChessErrors::PawnCanOnlyAttackDiagonal(msg));
+            }
+        }
+        Ok(to_spot.to_string())
     }
 }
 
@@ -103,11 +122,21 @@ impl GamePiece for Rook {
     fn get_player(&self) -> PLAYER{
         self.player
     }
-    fn  move_down_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        !unimplemented!()
+    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+        panic!();
     }
-    fn  move_up_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        !unimplemented!()
+    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        panic!();
+    }
+    fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+         panic!()
+    }
+    fn  move_up_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+         panic!()
+    }
+    fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
 }
 
@@ -129,11 +158,23 @@ impl GamePiece for Knight {
     fn get_player(&self) -> PLAYER{
         self.player
     }
+    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
+    }
+    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
+    }
     fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
     fn  move_up_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
+    }
+    fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
@@ -157,11 +198,24 @@ impl GamePiece for Bishop {
     fn get_player(&self) -> PLAYER{
         self.player
     }
-    fn  move_down_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        !unimplemented!()
+    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
-    fn  move_up_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        !unimplemented!()
+    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
+    }
+    fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
+    }
+    fn  move_up_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
+    }
+    fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        Ok(to_spot.to_string())
     }
 }
 
@@ -183,11 +237,20 @@ impl GamePiece for Queen {
     fn get_player(&self) -> PLAYER{
         self.player
     }
+    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+        panic!();
+    }
+    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        panic!();
+    }
     fn  move_down_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        !unimplemented!()
+         panic!()
     }
     fn  move_up_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        !unimplemented!()
+         panic!()
+    }
+    fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        Ok(to_spot.to_string())
     }
 }
 
@@ -209,11 +272,20 @@ impl GamePiece for King {
     fn get_player(&self) -> PLAYER{
         self.player
     }
+    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+        panic!();
+    }
+    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        panic!();
+    }
     fn  move_down_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        !unimplemented!()
+         panic!()
     }
     fn  move_up_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        !unimplemented!()
+         panic!()
+    }
+    fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        Ok(to_spot.to_string())
     }
 }
 

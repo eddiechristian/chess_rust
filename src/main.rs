@@ -6,6 +6,18 @@ use std::io::{stdin,stdout,Write};
 
 use visual::GameState;
 
+#[derive(Debug)]
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+    UpLeft,
+    UpRight,
+    DownLeft,
+    DownRight
+}
+
 struct Game {
     state: GameState,
     turn_history: Vec<String>,
@@ -20,6 +32,64 @@ impl Default for Game {
    
 }
 impl Game {
+    fn check_pieces_between(&self, from_spot: &str, to_spot: &str, dir: Direction)-> Result<(), chess_errors::ChessErrors>{
+        let mut pos:String = to_spot.to_string();
+        loop{
+            println!("pos: {}", pos);
+            if let Ok(bounds) = chess_notation_utilities::get_bounds(&pos){
+                let next_pos_opt=  match dir{
+                    Direction::Up => {
+                            bounds.bottom
+                    },
+                    Direction::Down => {
+                            bounds.top
+                    },
+                    Direction::Left => {
+                            bounds.right
+                    },
+                    Direction::Right => {
+                            bounds.left
+                    },
+                    Direction::DownLeft => {
+                            bounds.top_right_diag
+                    },
+                    Direction::UpLeft => {
+                            bounds.bottom_right_diag
+                    },
+                    Direction::UpRight => {
+                            bounds.bottom_left_diag
+                    },
+                    Direction::DownRight => {
+                            bounds.top_left_diag
+                    },
+                };
+                println!("dir {:?}",dir);
+                if let Some(next_pos_array) = next_pos_opt {
+                    let x = std::str::from_utf8(&next_pos_array).unwrap();
+                    pos= x.to_string();
+                    if pos == from_spot {
+                        break;
+                    }
+                    if let Ok(index) = chess_notation_utilities::notation_to_index(&pos) {
+                        if let Some(piece) = self.state.get_piece_at(index) {
+                            if piece.get_player() == self.state.player_turn{
+                                return Err(chess_errors::ChessErrors::PieceBetween(pos));
+                            }
+                        }
+                    }
+                }else {
+                    println!("oops1");
+                    return Err(chess_errors::ChessErrors::InvalidNotation(pos.to_string()));
+                }
+            } else {
+
+                println!("oops2");
+                return Err(chess_errors::ChessErrors::InvalidNotation(pos.to_string()));
+            }
+           
+        }
+        Ok(())
+    }
     fn is_move_valid(&self, from_spot: &str, to_spot: &str, whos_turn: visual::PLAYER)->Result<(), chess_errors::ChessErrors> {
         // first determine if piece at from is correct player.
         if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
@@ -48,7 +118,6 @@ impl Game {
         let (from_point, to_point) = chess_notation_utilities::convert_move_notation_to_xy(from_spot,to_spot)?;
         let deltax: i8 = (from_point.x as i8 - to_point.x as i8) as i8;
         let deltay: i8 = (from_point.y as i8 - to_point.y as i8) as i8;
-        println!("deltaX: {:?} deltaY: {:?}", deltax, deltay );
         if deltax == 0 && deltay < 0 {
             //down
             if deltay.abs() == 1 {
@@ -58,6 +127,10 @@ impl Game {
                         piece.move_down_one(to_spot, &self.state)?;
                     }
                 }
+            }else {
+                //multiple down
+                //check pieces between
+                self.check_pieces_between(from_spot, to_spot, Direction::Down)?;
             }
         } else if deltax == 0 && deltay > 0{
             //up
@@ -68,12 +141,42 @@ impl Game {
                         piece.move_up_one(to_spot, &self.state)?;
                     }
                 }
+            }else {
+                //multiple up
+                //check pieces between
+                self.check_pieces_between(from_spot, to_spot, Direction::Up)?;
             }
         }else if deltax > 0 && deltay == 0{
             //left
         }else if deltax < 0 && deltay == 0{
             //right
+        }else if deltax.abs() == deltay.abs(){
+            //diagonal
+            //determine dir
+            let dir = {
+                if deltax > 0 && deltay > 0  {
+                    Direction::UpLeft
+                } else if deltax > 0 && deltay < 0 {
+                    Direction::DownLeft
+                } else if deltax < 0 && deltay < 0 {
+                    Direction::DownRight
+                } else {
+                    Direction::UpRight
+                }
+            };
+            if deltax.abs() != 1 {
+                //check pieces between because multiple spaces
+                self.check_pieces_between(from_spot, to_spot, dir)?;
+            }
+            if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
+                if let Some(piece) = self.state.get_piece_at(index) {
+                    piece.move_diagonal(to_spot, &self.state)?;
+                }
+            }
+            // if diagonal deltas must be equal, except for Knight
+
         }
+
         //check for current player in check
         Ok(())
     }
@@ -128,7 +231,7 @@ fn main() {
                 visual::PLAYER::BLACK => visual::PLAYER::WHITE,
             };
         }
-       
+        
         
     
     }

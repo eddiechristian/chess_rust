@@ -172,9 +172,129 @@ pub fn get_bounds(spot: &str) -> Result<Bounds, chess_errors::ChessErrors> {
             _ => None,
         }
     };
+    let bottom_right_diag = {
+        match &spot.chars().nth(0).unwrap() {
+            col_char @ 'a'
+            | col_char @ 'b'
+            | col_char @ 'c'
+            | col_char @ 'd'
+            | col_char @ 'e'
+            | col_char @ 'f'
+            | col_char @ 'g' => {
+                match &spot.chars().nth(1).unwrap() {
+                    '1' => None,
+                    row_char @ '8'
+                    | row_char @ '7'
+                    | row_char @ '6'
+                    | row_char @ '5'
+                    | row_char @ '4'
+                    | row_char @ '3'
+                    | row_char @ '2' => {
+                        let mut row = row_char.to_digit(10).unwrap();
+                        row -= 1;
+                        let y = format!("{}{}", plus_one_col(*col_char).unwrap(), row);
+                        Some(y.as_bytes().try_into().unwrap())
+                    
+                    }
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
 
-    let (top_left_diag, top_right_diag, bottom_left_diag, bottom_right_diag) =
-        (None, None, None, None);
+    };
+
+    let bottom_left_diag = {
+        match &spot.chars().nth(0).unwrap() {
+            col_char @ 'a'
+            | col_char @ 'b'
+            | col_char @ 'c'
+            | col_char @ 'd'
+            | col_char @ 'e'
+            | col_char @ 'f'
+            | col_char @ 'g' => {
+                match &spot.chars().nth(1).unwrap() {
+                    '1' => None,
+                    row_char @ '8'
+                    | row_char @ '7'
+                    | row_char @ '6'
+                    | row_char @ '5'
+                    | row_char @ '4'
+                    | row_char @ '3'
+                    | row_char @ '2' => {
+                        let mut row = row_char.to_digit(10).unwrap();
+                        row -= 1;
+                        let y = format!("{}{}", minus_one_col(*col_char).unwrap(), row);
+                        Some(y.as_bytes().try_into().unwrap())
+                    
+                    }
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
+    };
+
+    let top_left_diag = {
+        match &spot.chars().nth(0).unwrap() {
+            col_char @ 'a'
+            | col_char @ 'b'
+            | col_char @ 'c'
+            | col_char @ 'd'
+            | col_char @ 'e'
+            | col_char @ 'f'
+            | col_char @ 'g' => {
+                match &spot.chars().nth(1).unwrap() {
+                    '1' => None,
+                    row_char @ '8'
+                    | row_char @ '7'
+                    | row_char @ '6'
+                    | row_char @ '5'
+                    | row_char @ '4'
+                    | row_char @ '3'
+                    | row_char @ '2' => {
+                        let mut row = row_char.to_digit(10).unwrap();
+                        row += 1;
+                        let y = format!("{}{}", minus_one_col(*col_char).unwrap(), row);
+                        Some(y.as_bytes().try_into().unwrap())
+                    
+                    }
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
+    };
+    let top_right_diag = {
+        match &spot.chars().nth(0).unwrap() {
+            col_char @ 'a'
+            | col_char @ 'b'
+            | col_char @ 'c'
+            | col_char @ 'd'
+            | col_char @ 'e'
+            | col_char @ 'f'
+            | col_char @ 'g' => {
+                match &spot.chars().nth(1).unwrap() {
+                    '1' => None,
+                    row_char @ '8'
+                    | row_char @ '7'
+                    | row_char @ '6'
+                    | row_char @ '5'
+                    | row_char @ '4'
+                    | row_char @ '3'
+                    | row_char @ '2' => {
+                        let mut row = row_char.to_digit(10).unwrap();
+                        row += 1;
+                        let y = format!("{}{}", plus_one_col(*col_char).unwrap(), row);
+                        Some(y.as_bytes().try_into().unwrap())
+                    
+                    }
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
+    };
 
     let bounds = Bounds {
         top: top,

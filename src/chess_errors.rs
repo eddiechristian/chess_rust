@@ -10,7 +10,9 @@ pub enum ChessErrors {
     NoPiece(String),
     PlayerPieceAlreadyThere(String),
     PawnCantAttackForward(String),
+    PawnCanOnlyAttackDiagonal(String),
     InvalidMove(String),
+    PieceBetween(String),
     Utf8Error
 }
 
@@ -42,8 +44,14 @@ impl fmt::Display for ChessErrors {
             ChessErrors::PawnCantAttackForward(x) => {
                 write!(f, "pawn cant attack piece at {}", x)
             }
+            ChessErrors::PawnCanOnlyAttackDiagonal(x) => {
+                write!(f, "pawn cant move to {}", x)
+            }
             ChessErrors::InvalidMove(x) => {
                 write!(f, "piece cannot move to {}", x)
+            }
+            ChessErrors::PieceBetween(x) => {
+                write!(f, "piece cannot move  because one of your pieces is at {}", x)
             }
             _ => {
                 write!(f, "ddddd")
