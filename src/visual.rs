@@ -27,6 +27,8 @@ pub enum PLAYER {
 
 pub trait GamePiece {
     fn get_unicode_val(&self) -> char;
+    //an improvement would be to get rid of move_up/down to vertical, and left/right to horiz
+    // so two functions become one.
     fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
     fn  move_up_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
     fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
@@ -123,16 +125,16 @@ impl GamePiece for Rook {
         self.player
     }
     fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        panic!();
+        Ok(to_spot.to_string())
     }
     fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
-        panic!();
+        Ok(to_spot.to_string())
     }
     fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-         panic!()
+        Ok(to_spot.to_string())
     }
     fn  move_up_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-         panic!()
+        Ok(to_spot.to_string())
     }
     fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
         let msg = format!("{}",to_spot);
@@ -238,16 +240,16 @@ impl GamePiece for Queen {
         self.player
     }
     fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        panic!();
+        Ok(to_spot.to_string())
     }
     fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
-        panic!();
+        Ok(to_spot.to_string())
     }
-    fn  move_down_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-         panic!()
+    fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+        Ok(to_spot.to_string())
     }
-    fn  move_up_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-         panic!()
+    fn  move_up_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+        Ok(to_spot.to_string())
     }
     fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
         Ok(to_spot.to_string())
