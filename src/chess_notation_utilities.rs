@@ -206,13 +206,13 @@ pub fn get_bounds(spot: &str) -> Result<Bounds, chess_errors::ChessErrors> {
 
     let bottom_left_diag = {
         match &spot.chars().nth(0).unwrap() {
-            col_char @ 'a'
-            | col_char @ 'b'
+            col_char @ 'b'
             | col_char @ 'c'
             | col_char @ 'd'
             | col_char @ 'e'
             | col_char @ 'f'
-            | col_char @ 'g' => {
+            | col_char @ 'g'
+            | col_char @ 'h' => {
                 match &spot.chars().nth(1).unwrap() {
                     '1' => None,
                     row_char @ '8'
@@ -237,13 +237,13 @@ pub fn get_bounds(spot: &str) -> Result<Bounds, chess_errors::ChessErrors> {
 
     let top_left_diag = {
         match &spot.chars().nth(0).unwrap() {
-            col_char @ 'a'
-            | col_char @ 'b'
+            col_char @ 'b'
             | col_char @ 'c'
             | col_char @ 'd'
             | col_char @ 'e'
             | col_char @ 'f'
-            | col_char @ 'g' => {
+            | col_char @ 'g'
+            | col_char @ 'h' => {
                 match &spot.chars().nth(1).unwrap() {
                     '1' => None,
                     row_char @ '8'

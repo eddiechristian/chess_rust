@@ -1,3 +1,8 @@
+//for html
+//https://stackoverflow.com/questions/26432492/chessboard-html5-only
+//ai
+//https://github.com/werner-duvaud/muzero-general
+
 use std::fmt;
 use std::rc::Rc;
 
@@ -27,13 +32,10 @@ pub enum PLAYER {
 
 pub trait GamePiece {
     fn get_unicode_val(&self) -> char;
-    //an improvement would be to get rid of move_up/down to vertical, and left/right to horiz
-    // so two functions become one.
-    fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
-    fn  move_up_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
-    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
-    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
+    fn  move_horizontal(&self, to_spot: &str, state: &GameState, deltaX: i8) -> Result<String, chess_errors::ChessErrors>;
+    fn  move_vertical(&self, to_spot: &str, state: &GameState, deltaY: i8) -> Result<String, chess_errors::ChessErrors>;
     fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
+    fn move_knight(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
     fn get_player(&self) -> PLAYER;
 }
 
@@ -54,45 +56,37 @@ impl GamePiece for Pawn {
     fn get_player(&self) -> PLAYER{
         self.player
     }
-    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+    fn move_knight(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
-    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+    fn  move_horizontal(&self, to_spot: &str, state: &GameState, deltaX: i8) -> Result<String, chess_errors::ChessErrors>{
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
-    fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        //remember pawn can only attach diagonal
-        //check that here
-        if self.player == PLAYER::WHITE {
-            //white pawns cannot move up
-            let msg = format!("{}",to_spot);
-            return Err(chess_errors::ChessErrors::InvalidMove(msg));
-        }
+    fn  move_vertical(&self, to_spot: &str, state: &GameState, deltaY: i8) -> Result<String, chess_errors::ChessErrors>{
         if let Ok(index) = chess_notation_utilities::notation_to_index(&to_spot) {
-            if let Some(piece) = state.get_piece_at(index) {
+            if  let Some(piece) = state.get_piece_at(index){
                 if piece.get_player() != self.get_player(){
+                     //pawns cannot attack forward
                     let msg = format!("{}",to_spot);
-                    return Err(chess_errors::ChessErrors::PawnCantAttackForward(msg));
+                    return Err(chess_errors::ChessErrors::InvalidMove(msg));
                 }
             }
         }
-        Ok((to_spot.to_string()))
-    }
-    fn  move_up_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        if self.player == PLAYER::BLACK {
-            //black pawns cannot move up
+        if deltaY.abs() > 2 {
+            //pawns cannot move vert more than 2
             let msg = format!("{}",to_spot);
             return Err(chess_errors::ChessErrors::InvalidMove(msg));
         }
-        if let Ok(index) = chess_notation_utilities::notation_to_index(&to_spot) {
-            if let Some(piece) = state.get_piece_at(index) {
-                if piece.get_player() != self.get_player(){
-                    let msg = format!("{}",to_spot);
-                    return Err(chess_errors::ChessErrors::PawnCantAttackForward(msg));
-                }
-            }
+        if self.get_player() == PLAYER::BLACK && deltaY > 0 {
+            //black pawn annot move up
+            let msg = format!("{}",to_spot);
+            return Err(chess_errors::ChessErrors::InvalidMove(msg));
+        } else if self.get_player() == PLAYER::WHITE && deltaY < 0 {
+            //white pawn cannot move down
+            let msg = format!("{}",to_spot);
+            return Err(chess_errors::ChessErrors::InvalidMove(msg));
         }
         Ok(to_spot.to_string())
     }
@@ -124,16 +118,14 @@ impl GamePiece for Rook {
     fn get_player(&self) -> PLAYER{
         self.player
     }
-    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+    fn move_knight(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
+    }
+    fn  move_horizontal(&self, to_spot: &str, state: &GameState, deltaX: i8) -> Result<String, chess_errors::ChessErrors>{
         Ok(to_spot.to_string())
     }
-    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
-        Ok(to_spot.to_string())
-    }
-    fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        Ok(to_spot.to_string())
-    }
-    fn  move_up_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+    fn  move_vertical(&self, to_spot: &str, state: &GameState, deltaY: i8) -> Result<String, chess_errors::ChessErrors>{
         Ok(to_spot.to_string())
     }
     fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
@@ -160,19 +152,14 @@ impl GamePiece for Knight {
     fn get_player(&self) -> PLAYER{
         self.player
     }
-    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+    fn move_knight(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        Ok(to_spot.to_string())
+    }
+    fn  move_horizontal(&self, to_spot: &str, state: &GameState, deltaX: i8) -> Result<String, chess_errors::ChessErrors>{
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
-    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
-        let msg = format!("{}",to_spot);
-        return Err(chess_errors::ChessErrors::InvalidMove(msg));
-    }
-    fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        let msg = format!("{}",to_spot);
-        return Err(chess_errors::ChessErrors::InvalidMove(msg));
-    }
-    fn  move_up_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+    fn  move_vertical(&self, to_spot: &str, state: &GameState, deltaY: i8) -> Result<String, chess_errors::ChessErrors>{
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
@@ -200,19 +187,15 @@ impl GamePiece for Bishop {
     fn get_player(&self) -> PLAYER{
         self.player
     }
-    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+    fn move_knight(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
-    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+    fn  move_horizontal(&self, to_spot: &str, state: &GameState, deltaX: i8) -> Result<String, chess_errors::ChessErrors>{
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
-    fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        let msg = format!("{}",to_spot);
-        return Err(chess_errors::ChessErrors::InvalidMove(msg));
-    }
-    fn  move_up_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+    fn  move_vertical(&self, to_spot: &str, state: &GameState, deltaY: i8) -> Result<String, chess_errors::ChessErrors>{
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
@@ -239,16 +222,14 @@ impl GamePiece for Queen {
     fn get_player(&self) -> PLAYER{
         self.player
     }
-    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+    fn move_knight(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
+    }
+    fn  move_horizontal(&self, to_spot: &str, state: &GameState, deltaX: i8) -> Result<String, chess_errors::ChessErrors>{
         Ok(to_spot.to_string())
     }
-    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
-        Ok(to_spot.to_string())
-    }
-    fn  move_down_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        Ok(to_spot.to_string())
-    }
-    fn  move_up_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
+    fn  move_vertical(&self, to_spot: &str, state: &GameState, deltaY: i8) -> Result<String, chess_errors::ChessErrors>{
         Ok(to_spot.to_string())
     }
     fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
@@ -274,17 +255,16 @@ impl GamePiece for King {
     fn get_player(&self) -> PLAYER{
         self.player
     }
-    fn  move_left_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-        panic!();
+    fn move_knight(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
-    fn  move_right_one(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
-        panic!();
+    fn  move_horizontal(&self, to_spot: &str, state: &GameState, deltaX: i8) -> Result<String, chess_errors::ChessErrors>{
+        let msg = format!("{}",to_spot);
+        return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
-    fn  move_down_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-         panic!()
-    }
-    fn  move_up_one(&self, pos: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors> {
-         panic!()
+    fn  move_vertical(&self, to_spot: &str, state: &GameState, deltaY: i8) -> Result<String, chess_errors::ChessErrors>{
+        Ok(to_spot.to_string())
     }
     fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>{
         Ok(to_spot.to_string())

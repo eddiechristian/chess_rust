@@ -118,38 +118,40 @@ impl Game {
         let (from_point, to_point) = chess_notation_utilities::convert_move_notation_to_xy(from_spot,to_spot)?;
         let deltax: i8 = (from_point.x as i8 - to_point.x as i8) as i8;
         let deltay: i8 = (from_point.y as i8 - to_point.y as i8) as i8;
-        if deltax == 0 && deltay < 0 {
-            //down
-            if deltay.abs() == 1 {
-                //move down one
-                if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
-                    if let Some(piece) = self.state.get_piece_at(index) {
-                        piece.move_down_one(to_spot, &self.state)?;
-                    }
+        if deltax == 0  {
+            //vertical
+            let dir = {
+                if deltay < 0 {
+                    Direction::Down
+                }else  {
+                    Direction::Up
                 }
-            }else {
-                //multiple down
-                //check pieces between
-                self.check_pieces_between(from_spot, to_spot, Direction::Down)?;
+            }; 
+            if deltay.abs() !=1 {
+                self.check_pieces_between(from_spot, to_spot, dir)?;
             }
-        } else if deltax == 0 && deltay > 0{
-            //up
-            if deltay == 1 {
-                //move up one
-                if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
-                    if let Some(piece) = self.state.get_piece_at(index) {
-                        piece.move_up_one(to_spot, &self.state)?;
-                    }
+            if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
+                if let Some(piece) = self.state.get_piece_at(index) {
+                    piece.move_vertical(to_spot, &self.state, deltay)?;
                 }
-            }else {
-                //multiple up
-                //check pieces between
-                self.check_pieces_between(from_spot, to_spot, Direction::Up)?;
             }
-        }else if deltax > 0 && deltay == 0{
-            //left
-        }else if deltax < 0 && deltay == 0{
-            //right
+        } else if deltay == 0{
+            //Horiz
+            let dir = {
+                if deltax < 0 {
+                    Direction::Right
+                }else  {
+                    Direction::Left
+                }
+            }; 
+            if deltax.abs() !=1 {
+                self.check_pieces_between(from_spot, to_spot, dir)?;
+            }
+            if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
+                if let Some(piece) = self.state.get_piece_at(index) {
+                    piece.move_horizontal(to_spot, &self.state, deltax)?;
+                }
+            }
         }else if deltax.abs() == deltay.abs(){
             //diagonal
             //determine dir
@@ -175,6 +177,12 @@ impl Game {
             }
             // if diagonal deltas must be equal, except for Knight
 
+        }else if (deltax.abs() == 2 && deltay.abs() ==1) || (deltax.abs() == 1 && deltay.abs() ==2){
+            if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
+                if let Some(piece) = self.state.get_piece_at(index) {
+                    piece.move_knight(to_spot, &self.state)?;
+                }
+            }
         }
 
         //check for current player in check
