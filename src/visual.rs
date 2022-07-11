@@ -578,6 +578,7 @@ impl GameState {
                 };
                 Some(Rc::new(black_queen))
             },
+            _ => None
         }
         
     }
@@ -591,7 +592,9 @@ impl GameState {
         }
         if let MoveType::Promotion(piece_char) =  move_type{
             let new_piece = self.game_piece(piece_char);
-            let _= std::mem::replace(&mut self.state[to], new_piece);
+            if new_piece.is_some() {
+                let _= std::mem::replace(&mut self.state[to], new_piece);
+            }
         }else {
             value.as_ref().unwrap().toggle_moved();
             let  _ = std::mem::replace(&mut self.state[to], value);
