@@ -360,8 +360,8 @@ impl Game {
     }
 }
 fn main() {
-    let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6","b6-b7","f5-f4","a1-a7","g7-g6"]);
-        
+    let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6",
+        "b6-b7","f5-f4","a1-a7","g7-g6","d2-d4","h7-h5","d4-d5","h5-h4", "b2-b4","c6-a5", "b4-b5","c7-c5"]);    
     let mut game_over = false;
     while game_over == false {
         let mut move_notation=String::new();
@@ -415,17 +415,30 @@ mod tests {
         let bad_move= chess_game.move_piece("a7-a8pq", chess_game.state.player_turn);
         assert!(bad_move.is_err());
     }
-    // #[test]
-    // fn test_enpassant1() {
-    //     //pawns reaching 8th rank can be promoted
-    //     let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6",
-    //     "b6-b7","f5-f4","a1-a7","g7-g6","d2-d4","h7-h5","d4-d5","h5-h4", "b2-b4","c6-a5", "b4-b5","c7-c5"]);
-    //     let good_move= chess_game.move_piece("b5-c6", chess_game.state.player_turn);
-    //     assert!(good_move.is_ok());
-    //     chess_game.move_piece("g2-g4", chess_game.state.player_turn);
-    //     let good_move= chess_game.move_piece("f4-g3", chess_game.state.player_turn);
-    //     assert!(good_move.is_ok());
-    // } 
+    #[test]
+    fn test_enpassant1() {
+        //pawns reaching 8th rank can be promoted
+        let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6",
+        "b6-b7","f5-f4","a1-a7","g7-g6","d2-d4","h7-h5","d4-d5","h5-h4", "b2-b4","c6-a5", "b4-b5","c7-c5"]);
+        let good_move1= chess_game.move_piece("b5-c6", chess_game.state.player_turn);
+        assert!(good_move1.is_ok());
+        chess_game.state.player_turn = match chess_game.state.player_turn {
+            visual::PLAYER::WHITE => visual::PLAYER::BLACK,
+            visual::PLAYER::BLACK => visual::PLAYER::WHITE,
+        };
+        chess_game.move_piece("h8-h7", chess_game.state.player_turn);
+        chess_game.state.player_turn = match chess_game.state.player_turn {
+            visual::PLAYER::WHITE => visual::PLAYER::BLACK,
+            visual::PLAYER::BLACK => visual::PLAYER::WHITE,
+        };
+        chess_game.move_piece("g2-g4", chess_game.state.player_turn);
+        chess_game.state.player_turn = match chess_game.state.player_turn {
+            visual::PLAYER::WHITE => visual::PLAYER::BLACK,
+            visual::PLAYER::BLACK => visual::PLAYER::WHITE,
+        };
+        let good_move2= chess_game.move_piece("f4-g3", chess_game.state.player_turn);
+        assert!(good_move2.is_ok());
+    } 
     
 
     // #[test]
