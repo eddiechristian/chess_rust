@@ -9,12 +9,12 @@ use std::rc::Rc;
 use crate::chess_notation_utilities;
 use crate::chess_errors;
 
-const WHITE_PAWN: char = '\u{2659}';
+pub const WHITE_PAWN: char = '\u{2659}';
 const WHITE_ROOK: char = '\u{2656}';
 const WHITE_KNIGHT: char = '\u{2658}';
 const WHITE_BISHOP: char = '\u{2657}';
 
-const BLACK_PAWN: char = '\u{265F}';
+pub const BLACK_PAWN: char = '\u{265F}';
 const BLACK_ROOK: char = '\u{265C}';
 const BLACK_KNIGHT: char = '\u{265E}';
 const BLACK_BISHOP: char = '\u{265D}';
@@ -30,10 +30,18 @@ pub enum PLAYER {
     BLACK,
 }
 
+#[derive(Debug)]
+pub enum MoveType {
+    Enpassant(usize),
+    Castling,
+    Regular,
+    Promotion(char)
+}
+
 pub trait GamePiece : std::fmt::Debug {
     fn get_unicode_val(&self) -> char;
     fn move_horizontal(&self, to_spot: &str, state: &GameState, delta_x: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>;
-    fn move_vertical(&self, to_spot: &str, state: &GameState, delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>;
+    fn move_vertical(&self, to_spot: &str, state: &GameState, delta_y: i8, promotion: Option<&str>) -> Result<(String,MoveType), chess_errors::ChessErrors>;
     fn move_diagonal(&self, to_spot: &str, state: &GameState, delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>;
     fn move_knight(&self, to_spot: &str, state: &GameState, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>;
     fn get_player(&self) -> PLAYER;
@@ -73,7 +81,7 @@ impl GamePiece for Pawn {
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
-    fn  move_vertical(&self, to_spot: &str, state: &GameState, delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
+    fn  move_vertical(&self, to_spot: &str, state: &GameState, delta_y: i8, promotion_opt: Option<&str>) -> Result<(String,MoveType), chess_errors::ChessErrors>{
         if let Ok(index) = chess_notation_utilities::notation_to_index(&to_spot) {
             if  let Some(piece) = state.get_piece_at(index){
                 if piece.get_player() != self.get_player(){
@@ -94,18 +102,9 @@ impl GamePiece for Pawn {
                 let msg = format!("{}",to_spot);
                 return Err(chess_errors::ChessErrors::InvalidMove(msg));
              }
-            //  if let Ok(index) = chess_notation_utilities::notation_to_index(&to_spot) {
-            //     if  let Some(piece) = state.get_piece_at(index){
-            //         if piece.get_moved() == true{
-            //             let msg = format!("{}",to_spot);
-            //             return Err(chess_errors::ChessErrors::InvalidMove(msg));
-            //         }
-            //     }
-            // }
-             
         }
         if self.get_player() == PLAYER::BLACK && delta_y > 0 {
-            //black pawn annot move up
+            //black pawn cannot move up
             let msg = format!("{}",to_spot);
             return Err(chess_errors::ChessErrors::InvalidMove(msg));
         } else if self.get_player() == PLAYER::WHITE && delta_y < 0 {
@@ -113,7 +112,34 @@ impl GamePiece for Pawn {
             let msg = format!("{}",to_spot);
             return Err(chess_errors::ChessErrors::InvalidMove(msg));
         }
-        Ok(to_spot.to_string())
+        //check for promotion
+        if let Ok(row) =chess_notation_utilities::convert_row(to_spot){
+            if self.get_player() == PLAYER::BLACK {
+                if row == 7 {
+                    match promotion_opt {
+                        None => {
+                            return Ok((to_spot.to_string(),MoveType::Promotion(BLACK_QUEEN)))
+                        },
+                        Some(promotion) => {
+                            return Ok((to_spot.to_string(),MoveType::Promotion(BLACK_QUEEN)));
+                        }
+                    }
+                }
+            } else {
+                if row == 0 {
+                    match promotion_opt {
+                        None => {
+                            return Ok((to_spot.to_string(),MoveType::Promotion(WHITE_QUEEN)))
+                        },
+                        Some(promotion) => {
+                            return Ok((to_spot.to_string(),MoveType::Promotion(WHITE_QUEEN)));
+                        }
+                    }
+                }
+            }   
+        }
+       
+        Ok((to_spot.to_string(),MoveType::Regular))
     }
     fn  move_diagonal(&self, to_spot: &str, state: &GameState, delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
         if self.get_player() == PLAYER::BLACK && delta_y > 0 {
@@ -170,12 +196,12 @@ impl GamePiece for Rook {
         }
         Ok(to_spot.to_string())
     }
-    fn  move_vertical(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
+    fn  move_vertical(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<(String,MoveType), chess_errors::ChessErrors>{
         if promotion.is_some() {
             let msg = format!("{}",to_spot);
             return Err(chess_errors::ChessErrors::InvalidPromotion(msg));
         }
-        Ok(to_spot.to_string())
+        Ok((to_spot.to_string(),MoveType::Regular))
     }
     fn  move_diagonal(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
         let msg = format!("{}",to_spot);
@@ -219,7 +245,7 @@ impl GamePiece for Knight {
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
-    fn  move_vertical(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
+    fn  move_vertical(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<(String,MoveType), chess_errors::ChessErrors>{
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
@@ -262,7 +288,7 @@ impl GamePiece for Bishop {
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
-    fn  move_vertical(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
+    fn  move_vertical(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<(String,MoveType), chess_errors::ChessErrors>{
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
@@ -311,12 +337,12 @@ impl GamePiece for Queen {
         }
         Ok(to_spot.to_string())
     }
-    fn  move_vertical(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
+    fn  move_vertical(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<(String,MoveType), chess_errors::ChessErrors>{
         if promotion.is_some() {
             let msg = format!("{}",to_spot);
             return Err(chess_errors::ChessErrors::InvalidPromotion(msg));
         }
-        Ok(to_spot.to_string())
+        Ok((to_spot.to_string(),MoveType::Regular))
     }
     fn  move_diagonal(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
         if promotion.is_some() {
@@ -360,12 +386,12 @@ impl GamePiece for King {
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
-    fn  move_vertical(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
+    fn  move_vertical(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<(String,MoveType), chess_errors::ChessErrors>{
         if promotion.is_some() {
             let msg = format!("{}",to_spot);
             return Err(chess_errors::ChessErrors::InvalidPromotion(msg));
         }
-        Ok(to_spot.to_string())
+        Ok((to_spot.to_string(),MoveType::Regular))
     }
     fn  move_diagonal(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
         if promotion.is_some() {
@@ -379,6 +405,7 @@ impl GamePiece for King {
 pub struct GameState {
     pub state: Vec<Option<Rc<dyn GamePiece>>>,
     pub player_turn: PLAYER,
+    pub en_passant_enabled: Option<Vec<String>>,
 }
 
 impl fmt::Display for GameState {
@@ -426,7 +453,7 @@ impl Default for GameState {
             player: PLAYER::BLACK,
             moved: RefCell::new(false) ,
         };
-        let black_king = Queen {
+        let black_king = King {
             unicode_val: BLACK_KING,
             player: PLAYER::BLACK,
             moved: RefCell::new(false) ,
@@ -466,7 +493,7 @@ impl Default for GameState {
             player: PLAYER::WHITE,
             moved: RefCell::new(false) ,
         };
-        let white_king = Queen {
+        let white_king = King {
             unicode_val: WHITE_KING,
             player: PLAYER::WHITE,
             moved: RefCell::new(false) ,
@@ -526,19 +553,51 @@ impl Default for GameState {
         let state = GameState {
             state: pieces,
             player_turn: PLAYER::WHITE,
+            en_passant_enabled: None,
         };
         state
     }
 }
 
 impl GameState {
-    pub fn move_piece(&mut self, from: usize, to: usize, promotion:  Option<&str>) {
+    fn game_piece(&self, piece_char:char) -> Option<Rc<dyn GamePiece>>{
+        match piece_char{
+            (WHITE_QUEEN) => {
+                let white_queen = Queen {
+                                unicode_val: WHITE_QUEEN,
+                                player: PLAYER::WHITE,
+                                moved: RefCell::new(true) ,
+                            };
+                Some(Rc::new(white_queen))
+            },
+            (BLACK_QUEEN) => {
+                let black_queen = Queen {
+                    unicode_val: BLACK_QUEEN,
+                    player: PLAYER::BLACK,
+                    moved: RefCell::new(true) ,
+                };
+                Some(Rc::new(black_queen))
+            },
+        }
+        
+    }
+    
+    pub fn move_piece(&mut self, from: usize, to: usize, promotion:  Option<&str>, move_type: MoveType ) {
         // This function does not validate whether or not the move is valid. It is done from calling functions
         let value = std::mem::replace(&mut self.state[from], None);
-        println!("piece {:?} promotion {:?}",value.as_ref().unwrap() ,promotion);
-        value.as_ref().unwrap().toggle_moved();
-        println!("piece {:?}",value.as_ref().unwrap() );
-        let  _ = std::mem::replace(&mut self.state[to], value);
+        if let MoveType::Enpassant(index) =  move_type{
+            let _= std::mem::replace(&mut self.state[index], None);
+            self.en_passant_enabled = None;
+        }
+        if let MoveType::Promotion(piece_char) =  move_type{
+            let new_piece = self.game_piece(piece_char);
+            let _= std::mem::replace(&mut self.state[to], new_piece);
+        }else {
+            value.as_ref().unwrap().toggle_moved();
+            let  _ = std::mem::replace(&mut self.state[to], value);
+        }
+        
+       
     }
 
     pub fn get_piece_at(&self, pos: usize) -> Option<Rc<dyn GamePiece>> {

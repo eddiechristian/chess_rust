@@ -18,6 +18,8 @@ enum Direction {
     DownRight
 }
 
+
+
 struct Game {
     state: GameState,
     turn_history: Vec<String>,
@@ -53,7 +55,6 @@ impl Game {
     fn check_pieces_between(&self, from_spot: &str, to_spot: &str, dir: Direction)-> Result<(), chess_errors::ChessErrors>{
         let mut pos:String = to_spot.to_string();
         loop{
-            println!("pos: {}", pos);
             if let Ok(bounds) = chess_notation_utilities::get_bounds(&pos){
                 let next_pos_opt=  match dir{
                     Direction::Up => {
@@ -81,7 +82,6 @@ impl Game {
                             bounds.top_left_diag
                     },
                 };
-                println!("dir {:?}",dir);
                 if let Some(next_pos_array) = next_pos_opt {
                     let x = std::str::from_utf8(&next_pos_array).unwrap();
                     pos= x.to_string();
@@ -108,7 +108,7 @@ impl Game {
         }
         Ok(())
     }
-    fn is_move_valid(&self, from_spot: &str, to_spot: &str, whos_turn: visual::PLAYER, promotion_opt: Option<&str>)->Result<(), chess_errors::ChessErrors> {
+    fn is_move_valid(&self, from_spot: &str, to_spot: &str, whos_turn: visual::PLAYER, promotion_opt: Option<&str>)->Result<(visual::MoveType), chess_errors::ChessErrors> {
         // first determine if piece at from is correct player.
         if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
             if let Some(piece) = self.state.get_piece_at(index) {
@@ -134,16 +134,32 @@ impl Game {
             //promotions are only valid from 8th rank for pawn
             let from_row = chess_notation_utilities::convert_row(from_spot)?;
             let to_row = chess_notation_utilities::convert_row(to_spot)?;
-            println!("from_row {:?} to_row {:?}",from_row,to_row);
             if whos_turn == PLAYER::WHITE && to_row !=  0 &&  from_row != 1 {
-                let msg = format!("xxx{}",to_spot);
+                let msg = format!("{}",to_spot);
                 return Err(chess_errors::ChessErrors::InvalidPromotion(msg));
             }
             if whos_turn == PLAYER::BLACK && to_row != 8 && from_row!= 7 {
-                let msg = format!("yyy{}",to_spot);
+                let msg = format!("{}",to_spot);
                 return Err(chess_errors::ChessErrors::InvalidPromotion(msg));
             }
         }
+        //check move against en-passant_moves
+        if let Some(en_passant_enabled_vec) = &self.state.en_passant_enabled {
+            println!("en_passant_enabled_vec: {:?}",en_passant_enabled_vec);
+            for en_passant_move in en_passant_enabled_vec {
+                let en_passant_notation_move = &en_passant_move[0..5];
+                println!("en_passant_notation_move: {:?}",en_passant_notation_move);
+                let notation_move = format!("{}-{}",from_spot,to_spot);
+                if en_passant_notation_move == notation_move {
+                    let attacked_piece = &en_passant_move[5..];
+                    if let Ok(index) = chess_notation_utilities::notation_to_index(&attacked_piece) {
+                        return Ok(visual::MoveType::Enpassant(index));
+                    }
+                    
+                }
+            }
+        }
+
         // the x and y deltas will tell what kind of move it is
         
         let (from_point, to_point) = chess_notation_utilities::convert_move_notation_to_xy(from_spot,to_spot)?;
@@ -163,7 +179,9 @@ impl Game {
             }
             if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
                 if let Some(piece) = self.state.get_piece_at(index) {
-                    piece.move_vertical(to_spot, &self.state, delta_y, promotion_opt)?;
+                    if let (_, visual::MoveType::Promotion(new_piece)) = piece.move_vertical(to_spot, &self.state, delta_y, promotion_opt)?{
+                        return Ok(visual::MoveType::Promotion(new_piece));
+                    }
                 }
             }
         } else if delta_y == 0{
@@ -217,6 +235,101 @@ impl Game {
         }
 
         //check for current player in check
+        Ok((visual::MoveType::Regular))
+    }
+
+    fn check_en_passant (&mut self ,from_spot: &str, to_spot: &str, whos_turn: visual::PLAYER)->Result<(), chess_errors::ChessErrors> {
+        //in this function you see if last move is cause for enpassant then add moves to vec
+        let mut vec_en_passant_moves = Vec::new();
+        if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
+            if let Some(piece) = self.state.get_piece_at(index) {
+                let from_row = chess_notation_utilities::convert_row(from_spot)?;
+                let to_row = chess_notation_utilities::convert_row(to_spot)?;
+                println!("from_row {:?} to_row: {:?}", from_row, to_row);
+                 //determine if its a pawn
+                let bounds = chess_notation_utilities::get_bounds(to_spot)?;
+                let (left_spot_opt, right_spot_opt,
+                     bottom_spot_opt, top_spot_opt) = (bounds.left, bounds.right,bounds.bottom,bounds.top);
+                if piece.get_unicode_val() == visual::WHITE_PAWN {
+                    //determine coming from 2nd rank to 4th rank
+                   if from_row == 6 && to_row == 4 {
+                        //check left and right of to_spot for oposing pawn
+                        if let Some(left_spot_array) = left_spot_opt {
+                            if let Some(bottom_spot_array) = bottom_spot_opt {
+                                let left_spot = std::str::from_utf8(&left_spot_array).unwrap();
+                                let bottom_spot = std::str::from_utf8(&bottom_spot_array).unwrap();
+                                if let Ok(index) = chess_notation_utilities::notation_to_index(left_spot) {
+                                    if let Some(piece) = self.state.get_piece_at(index) {
+                                        if piece.get_unicode_val() == visual::BLACK_PAWN {
+                                            //its there 
+                                            let enpassant_move = format!("{}-{}{}", left_spot, bottom_spot, to_spot);
+                                            vec_en_passant_moves.push(enpassant_move);
+                                        }
+                                    }
+                                }
+                            }  
+                        }
+                        if let Some(right_spot_array) = right_spot_opt {
+                            if let Some(bottom_spot_array) = bottom_spot_opt {
+                                let right_spot = std::str::from_utf8(&right_spot_array).unwrap();
+                                let bottom_spot = std::str::from_utf8(&bottom_spot_array).unwrap();
+                                if let Ok(index) = chess_notation_utilities::notation_to_index(right_spot) {
+                                    if let Some(piece) = self.state.get_piece_at(index) {
+                                        if piece.get_unicode_val() == visual::BLACK_PAWN {
+                                            //its there 
+                                            let enpassant_move = format!("{}-{}{}", right_spot, bottom_spot, to_spot);
+                                            vec_en_passant_moves.push(enpassant_move);
+                                        }
+                                    }
+                                }
+                            }  
+                        }
+                   }
+                    
+                } else if piece.get_unicode_val() == visual::BLACK_PAWN {
+                    //determine coming from 2nd rank to 4th rank
+                    if from_row == 1 && to_row ==3 {
+                        //check left and right of to_spot for oposing pawn
+                        if let Some(left_spot_array) = left_spot_opt {
+                            if let Some(top_spot_array) =top_spot_opt {
+                                let left_spot = std::str::from_utf8(&left_spot_array).unwrap();
+                                let top_spot = std::str::from_utf8(&top_spot_array).unwrap();
+                                if let Ok(index) = chess_notation_utilities::notation_to_index(left_spot) {
+                                    if let Some(piece) = self.state.get_piece_at(index) {
+                                        if piece.get_unicode_val() == visual::WHITE_PAWN {
+                                            //its there 
+                                            let enpassant_move = format!("{}-{}{}", left_spot, top_spot, to_spot);
+                                            vec_en_passant_moves.push(enpassant_move);
+                                        }
+                                    }
+                                }
+                            }  
+                        }
+                        if let Some(right_spot_array) = right_spot_opt {
+                            if let Some(top_spot_array) = top_spot_opt {
+                                let right_spot = std::str::from_utf8(&right_spot_array).unwrap();
+                                let top_spot = std::str::from_utf8(&top_spot_array).unwrap();
+                                if let Ok(index) = chess_notation_utilities::notation_to_index(right_spot) {
+                                    if let Some(piece) = self.state.get_piece_at(index) {
+                                        if piece.get_unicode_val() == visual::WHITE_PAWN {
+                                            //its there 
+                                            let enpassant_move = format!("{}-{}{}", right_spot, top_spot, to_spot);
+                                            vec_en_passant_moves.push(enpassant_move);
+                                        }
+                                    }
+                                }
+                            }  
+                        }
+                    }
+                }
+            } 
+        }
+        if vec_en_passant_moves.len() > 0 {
+            self.state.en_passant_enabled =Some(vec_en_passant_moves);
+        }else {
+            self.state.en_passant_enabled = None;
+        }
+        
         Ok(())
     }
 
@@ -231,8 +344,9 @@ impl Game {
                 } else {
                     None
                 };
-                self.is_move_valid(from_spot, to_spot, whos_turn, promotion)?;
-                self.state.move_piece(from, to, promotion);
+                let move_type = self.is_move_valid(from_spot, to_spot, whos_turn, promotion)?;
+                self.check_en_passant(from_spot, to_spot, whos_turn)?;
+                self.state.move_piece(from, to, promotion, move_type);
             } else {
                 let msg = format!("Invalid notation");
                 return Err(chess_errors::ChessErrors::InvalidNotation(msg));
@@ -247,6 +361,7 @@ impl Game {
 }
 fn main() {
     let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6","b6-b7","f5-f4","a1-a7","g7-g6"]);
+        
     let mut game_over = false;
     while game_over == false {
         let mut move_notation=String::new();
@@ -300,5 +415,28 @@ mod tests {
         let bad_move= chess_game.move_piece("a7-a8pq", chess_game.state.player_turn);
         assert!(bad_move.is_err());
     }
+    // #[test]
+    // fn test_enpassant1() {
+    //     //pawns reaching 8th rank can be promoted
+    //     let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6",
+    //     "b6-b7","f5-f4","a1-a7","g7-g6","d2-d4","h7-h5","d4-d5","h5-h4", "b2-b4","c6-a5", "b4-b5","c7-c5"]);
+    //     let good_move= chess_game.move_piece("b5-c6", chess_game.state.player_turn);
+    //     assert!(good_move.is_ok());
+    //     chess_game.move_piece("g2-g4", chess_game.state.player_turn);
+    //     let good_move= chess_game.move_piece("f4-g3", chess_game.state.player_turn);
+    //     assert!(good_move.is_ok());
+    // } 
+    
 
+    // #[test]
+    // fn test_enpassant2() {
+    //     //pawns reaching 8th rank can be promoted
+    //     let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6",
+    //     "b6-b7","f5-f4","a1-a7","g7-g6","d2-d4","h7-h5","d4-d5","h5-h4", "b2-b4","c6-a5", "b4-b5","c7-c5"]);
+    //     let good_move= chess_game.move_piece("d5-c6", chess_game.state.player_turn);
+    //     assert!(good_move.is_ok());
+    //     chess_game.move_piece("g2-g4", chess_game.state.player_turn);
+    //     let good_move= chess_game.move_piece("h4-g3", chess_game.state.player_turn);
+    //     assert!(good_move.is_ok());
+    // } 
 }
