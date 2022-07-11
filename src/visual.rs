@@ -3,7 +3,7 @@
 //ai
 //https://github.com/werner-duvaud/muzero-general
 
-use std::fmt;
+use std::{cell::RefCell, fmt};
 use std::rc::Rc;
 
 use crate::chess_notation_utilities;
@@ -24,24 +24,26 @@ const BLACK_KING: char = '\u{265A}';
 const WHITE_QUEEN: char = '\u{2655}';
 const WHITE_KING: char = '\u{2654}';
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum PLAYER {
     WHITE,
     BLACK,
 }
 
-pub trait GamePiece {
+pub trait GamePiece : std::fmt::Debug {
     fn get_unicode_val(&self) -> char;
-    fn  move_horizontal(&self, to_spot: &str, state: &GameState, deltaX: i8) -> Result<String, chess_errors::ChessErrors>;
-    fn  move_vertical(&self, to_spot: &str, state: &GameState, deltaY: i8) -> Result<String, chess_errors::ChessErrors>;
-    fn  move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
+    fn move_horizontal(&self, to_spot: &str, state: &GameState, deltaX: i8) -> Result<String, chess_errors::ChessErrors>;
+    fn move_vertical(&self, to_spot: &str, state: &GameState, deltaY: i8) -> Result<String, chess_errors::ChessErrors>;
+    fn move_diagonal(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
     fn move_knight(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
     fn get_player(&self) -> PLAYER;
+    fn toggle_moved(&self);
 }
-
+#[derive(Debug)]
 pub struct Pawn {
     unicode_val: char,
     player: PLAYER,
+    moved: RefCell<bool> ,
 }
 impl fmt::Display for Pawn {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -50,6 +52,9 @@ impl fmt::Display for Pawn {
 }
 
 impl GamePiece for Pawn {
+    fn toggle_moved(&self){
+        self.moved.replace(true);
+    }
     fn get_unicode_val(&self) -> char {
         self.unicode_val
     }
@@ -100,10 +105,11 @@ impl GamePiece for Pawn {
         Ok(to_spot.to_string())
     }
 }
-
+#[derive(Debug)]
 pub struct Rook {
     unicode_val: char,
     player: PLAYER,
+    moved: RefCell<bool> ,
 }
 impl fmt::Display for Rook {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -112,6 +118,9 @@ impl fmt::Display for Rook {
 }
 
 impl GamePiece for Rook {
+    fn toggle_moved(&self){
+        self.moved.replace(true);
+    }
     fn get_unicode_val(&self) -> char {
         self.unicode_val
     }
@@ -133,10 +142,11 @@ impl GamePiece for Rook {
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
 }
-
+#[derive(Debug)]
 pub struct Knight {
     unicode_val: char,
     player: PLAYER,
+    moved: RefCell<bool> ,
 }
 
 impl fmt::Display for Knight {
@@ -146,6 +156,9 @@ impl fmt::Display for Knight {
 }
 
 impl GamePiece for Knight {
+    fn toggle_moved(&self){
+        self.moved.replace(true);
+    }
     fn get_unicode_val(&self) -> char {
         self.unicode_val
     }
@@ -168,10 +181,11 @@ impl GamePiece for Knight {
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
 }
-
+#[derive(Debug)]
 pub struct Bishop {
     unicode_val: char,
     player: PLAYER,
+    moved: RefCell<bool> ,
 }
 
 impl fmt::Display for Bishop {
@@ -181,6 +195,9 @@ impl fmt::Display for Bishop {
 }
 
 impl GamePiece for Bishop {
+    fn toggle_moved(&self){
+        self.moved.replace(true);
+    }
     fn get_unicode_val(&self) -> char {
         self.unicode_val
     }
@@ -203,10 +220,11 @@ impl GamePiece for Bishop {
         Ok(to_spot.to_string())
     }
 }
-
+#[derive(Debug)]
 pub struct Queen {
     unicode_val: char,
     player: PLAYER,
+    moved: RefCell<bool> ,
 }
 
 impl fmt::Display for Queen {
@@ -216,6 +234,9 @@ impl fmt::Display for Queen {
 }
 
 impl GamePiece for Queen {
+    fn toggle_moved(&self){
+        self.moved.replace(true);
+    }
     fn get_unicode_val(&self) -> char {
         self.unicode_val
     }
@@ -236,10 +257,11 @@ impl GamePiece for Queen {
         Ok(to_spot.to_string())
     }
 }
-
+#[derive(Debug)]
 pub struct King {
     unicode_val: char,
     player: PLAYER,
+    moved: RefCell<bool> ,
 }
 
 impl fmt::Display for King {
@@ -249,6 +271,9 @@ impl fmt::Display for King {
 }
 
 impl GamePiece for King {
+    fn toggle_moved(&self){
+        self.moved.replace(true);
+    }
     fn get_unicode_val(&self) -> char {
         self.unicode_val
     }
@@ -304,75 +329,93 @@ impl Default for GameState {
         let black_rook1 = Rook {
             unicode_val: BLACK_ROOK,
             player: PLAYER::BLACK,
+            moved: RefCell::new(false) ,
         };
         let black_knight1 = Knight {
             unicode_val: BLACK_KNIGHT,
             player: PLAYER::BLACK,
+            moved: RefCell::new(false) ,
         };
         let black_bishop1 = Bishop {
             unicode_val: BLACK_BISHOP,
             player: PLAYER::BLACK,
+            moved: RefCell::new(false) ,
         };
         let black_queen = Queen {
             unicode_val: BLACK_QUEEN,
             player: PLAYER::BLACK,
+            moved: RefCell::new(false) ,
         };
         let black_king = Queen {
             unicode_val: BLACK_KING,
             player: PLAYER::BLACK,
+            moved: RefCell::new(false) ,
         };
         let black_bishop2 = Bishop {
             unicode_val: BLACK_BISHOP,
             player: PLAYER::BLACK,
+            moved: RefCell::new(false) ,
         };
         let black_knight2 = Knight {
             unicode_val: BLACK_KNIGHT,
             player: PLAYER::BLACK,
+            moved: RefCell::new(false) ,
         };
         let black_rook2 = Rook {
             unicode_val: BLACK_ROOK,
             player: PLAYER::BLACK,
+            moved: RefCell::new(false) ,
         };
         let black_pawn_rc = Rc::new(Pawn {
             unicode_val: BLACK_PAWN,
             player: PLAYER::BLACK,
+            moved: RefCell::new(false) ,
         });
 
         let white_pawn_rc = Rc::new(Pawn {
             unicode_val: WHITE_PAWN,
             player: PLAYER::WHITE,
+            moved: RefCell::new(false) ,
         });
         let white_rook1 = Rook {
             unicode_val: WHITE_ROOK,
             player: PLAYER::WHITE,
+            moved: RefCell::new(false) ,
         };
         let white_knight1 = Knight {
             unicode_val: WHITE_KNIGHT,
             player: PLAYER::WHITE,
+            moved: RefCell::new(false) ,
         };
         let white_bishop1 = Bishop {
             unicode_val: WHITE_BISHOP,
             player: PLAYER::WHITE,
+            moved: RefCell::new(false) ,
         };
         let white_queen = Queen {
             unicode_val: WHITE_QUEEN,
             player: PLAYER::WHITE,
+            moved: RefCell::new(false) ,
         };
         let white_king = Queen {
             unicode_val: WHITE_KING,
             player: PLAYER::WHITE,
+            moved: RefCell::new(false) ,
         };
         let white_bishop2 = Bishop {
             unicode_val: WHITE_BISHOP,
             player: PLAYER::WHITE,
+            moved: RefCell::new(false) ,
         };
         let white_knight2 = Knight {
             unicode_val: WHITE_KNIGHT,
             player: PLAYER::WHITE,
+            moved: RefCell::new(false) ,
         };
         let white_rook2 = Rook {
             unicode_val: WHITE_ROOK,
             player: PLAYER::WHITE,
+            moved: RefCell::new(false) ,
         };
 
         let mut pieces: Vec<Option<Rc<dyn GamePiece>>> = Vec::new();
@@ -413,6 +456,9 @@ impl GameState {
     pub fn move_piece(&mut self, from: usize, to: usize) {
         // This function does not validate whether or not the move is valid. It is done from calling functions
         let value = std::mem::replace(&mut self.state[from], None);
+        println!("piece {:?}",value.as_ref().unwrap() );
+        value.as_ref().unwrap().toggle_moved();
+        println!("piece {:?}",value.as_ref().unwrap() );
         std::mem::replace(&mut self.state[to], value);
     }
 
