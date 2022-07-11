@@ -12,12 +12,13 @@ pub enum ChessErrors {
     PawnCantAttackForward(String),
     PawnCanOnlyAttackDiagonal(String),
     InvalidMove(String),
+    InvalidPromotion(String),
     PieceBetween(String),
     Utf8Error
 }
 
 impl From<Utf8Error> for ChessErrors {
-    fn from(error: Utf8Error) -> Self {
+    fn from(_error: Utf8Error) -> Self {
         ChessErrors::Utf8Error
     }
 }
@@ -50,6 +51,9 @@ impl fmt::Display for ChessErrors {
             ChessErrors::InvalidMove(x) => {
                 write!(f, "piece cannot move to {}", x)
             }
+            ChessErrors::InvalidPromotion(x) => {
+                write!(f, "piece cannot be promoted at {}", x)
+            }
             ChessErrors::PieceBetween(x) => {
                 write!(f, "piece cannot move  because one of your pieces is at {}", x)
             }
@@ -60,9 +64,3 @@ impl fmt::Display for ChessErrors {
     }
 }
 
-pub fn try_error(value: i64) -> Result<(), ChessErrors> {
-    let a: [u8; 2] = [97, 97];
-    let b = std::str::from_utf8(&a).unwrap();
-    let e = ChessErrors::InvalidNotation(b.to_string());
-    Err(e)
-}

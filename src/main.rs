@@ -4,7 +4,7 @@ mod visual;
 
 use std::io::{stdin,stdout,Write};
 
-use visual::GameState;
+use visual::{GameState, PLAYER};
 
 #[derive(Debug)]
 enum Direction {
@@ -29,9 +29,27 @@ impl Default for Game {
             turn_history: Vec::new(),
         }
     }
-   
 }
 impl Game {
+    fn game_from_turn_history(turn_history: &[&str]) -> Self {
+        let mut chess_game = Game {
+            state:GameState::default(),
+            turn_history: Vec::new(),
+        };
+        for turn in turn_history {
+            println!("turn {}",turn);
+            chess_game.turn_history.push(turn.to_string());
+            if let Err(e) =chess_game.move_piece(&turn, chess_game.state.player_turn){
+                println!("{}",e);
+            }else {
+                chess_game.state.player_turn = match chess_game.state.player_turn {
+                    visual::PLAYER::WHITE => visual::PLAYER::BLACK,
+                    visual::PLAYER::BLACK => visual::PLAYER::WHITE,
+                };
+            }
+        }
+        chess_game
+    }
     fn check_pieces_between(&self, from_spot: &str, to_spot: &str, dir: Direction)-> Result<(), chess_errors::ChessErrors>{
         let mut pos:String = to_spot.to_string();
         loop{
@@ -90,7 +108,7 @@ impl Game {
         }
         Ok(())
     }
-    fn is_move_valid(&self, from_spot: &str, to_spot: &str, whos_turn: visual::PLAYER)->Result<(), chess_errors::ChessErrors> {
+    fn is_move_valid(&self, from_spot: &str, to_spot: &str, whos_turn: visual::PLAYER, promotion_opt: Option<&str>)->Result<(), chess_errors::ChessErrors> {
         // first determine if piece at from is correct player.
         if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
             if let Some(piece) = self.state.get_piece_at(index) {
@@ -112,72 +130,85 @@ impl Game {
                 }
             } 
         }
-
+        if  promotion_opt.is_some() {
+            //promotions are only valid from 8th rank for pawn
+            let from_row = chess_notation_utilities::convert_row(from_spot)?;
+            let to_row = chess_notation_utilities::convert_row(to_spot)?;
+            println!("from_row {:?} to_row {:?}",from_row,to_row);
+            if whos_turn == PLAYER::WHITE && to_row !=  0 &&  from_row != 1 {
+                let msg = format!("xxx{}",from_spot);
+                return Err(chess_errors::ChessErrors::InvalidPromotion(msg));
+            }
+            if whos_turn == PLAYER::BLACK && to_row != 8 && from_row!= 7 {
+                let msg = format!("yyy{}",from_spot);
+                return Err(chess_errors::ChessErrors::InvalidPromotion(msg));
+            }
+        }
         // the x and y deltas will tell what kind of move it is
         
         let (from_point, to_point) = chess_notation_utilities::convert_move_notation_to_xy(from_spot,to_spot)?;
-        let deltax: i8 = (from_point.x as i8 - to_point.x as i8) as i8;
-        let deltay: i8 = (from_point.y as i8 - to_point.y as i8) as i8;
-        if deltax == 0  {
+        let delta_x: i8 = (from_point.x as i8 - to_point.x as i8) as i8;
+        let delta_y: i8 = (from_point.y as i8 - to_point.y as i8) as i8;
+        if delta_x == 0  {
             //vertical
             let dir = {
-                if deltay < 0 {
+                if delta_y < 0 {
                     Direction::Down
                 }else  {
                     Direction::Up
                 }
             }; 
-            if deltay.abs() !=1 {
+            if delta_y.abs() !=1 {
                 self.check_pieces_between(from_spot, to_spot, dir)?;
             }
             if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
                 if let Some(piece) = self.state.get_piece_at(index) {
-                    piece.move_vertical(to_spot, &self.state, deltay)?;
+                    piece.move_vertical(to_spot, &self.state, delta_y)?;
                 }
             }
-        } else if deltay == 0{
+        } else if delta_y == 0{
             //Horiz
             let dir = {
-                if deltax < 0 {
+                if delta_x < 0 {
                     Direction::Right
                 }else  {
                     Direction::Left
                 }
             }; 
-            if deltax.abs() !=1 {
+            if delta_x.abs() !=1 {
                 self.check_pieces_between(from_spot, to_spot, dir)?;
             }
             if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
                 if let Some(piece) = self.state.get_piece_at(index) {
-                    piece.move_horizontal(to_spot, &self.state, deltax)?;
+                    piece.move_horizontal(to_spot, &self.state, delta_x)?;
                 }
             }
-        }else if deltax.abs() == deltay.abs(){
+        }else if delta_x.abs() == delta_y.abs(){
             //diagonal
             //determine dir
             let dir = {
-                if deltax > 0 && deltay > 0  {
+                if delta_x > 0 && delta_y > 0  {
                     Direction::UpLeft
-                } else if deltax > 0 && deltay < 0 {
+                } else if delta_x > 0 && delta_y < 0 {
                     Direction::DownLeft
-                } else if deltax < 0 && deltay < 0 {
+                } else if delta_x < 0 && delta_y < 0 {
                     Direction::DownRight
                 } else {
                     Direction::UpRight
                 }
             };
-            if deltax.abs() != 1 {
+            if delta_x.abs() != 1 {
                 //check pieces between because multiple spaces
                 self.check_pieces_between(from_spot, to_spot, dir)?;
             }
             if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
                 if let Some(piece) = self.state.get_piece_at(index) {
-                    piece.move_diagonal(to_spot, &self.state)?;
+                    piece.move_diagonal(to_spot, &self.state, delta_y )?;
                 }
             }
             // if diagonal deltas must be equal, except for Knight
 
-        }else if (deltax.abs() == 2 && deltay.abs() ==1) || (deltax.abs() == 1 && deltay.abs() ==2){
+        }else if (delta_x.abs() == 2 && delta_y.abs() ==1) || (delta_x.abs() == 1 && delta_y.abs() ==2){
             if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
                 if let Some(piece) = self.state.get_piece_at(index) {
                     piece.move_knight(to_spot, &self.state)?;
@@ -190,14 +221,21 @@ impl Game {
     }
 
     fn move_piece (&mut self ,chess_move: &str, whos_turn: visual::PLAYER)->Result<(), chess_errors::ChessErrors> {
-        let mut the_move = chess_move.to_lowercase();
-        let index_of_dash = the_move.find("-");
+        let the_move = chess_move.to_lowercase();
         if let Some(index_of_dash) = the_move.find("-") {
             let from_spot = &the_move[0..index_of_dash];
-            let to_spot = &the_move[index_of_dash+1..];
+            let to_spot = &the_move[index_of_dash+1..index_of_dash+3];
             if let Ok((from, to)) = chess_notation_utilities::convert_move_notation_to_indexes(from_spot,to_spot) {
-                self.is_move_valid(from_spot, to_spot, whos_turn)?;
-                self.state.move_piece(from, to);
+                let promotion = if let Some(index_of_p) = the_move.find("p") {
+                    Some(&the_move[index_of_p+1 ..])
+                } else {
+                    None
+                };
+                self.is_move_valid(from_spot, to_spot, whos_turn, promotion)?;
+                self.state.move_piece(from, to, promotion);
+            } else {
+                let msg = format!("Invalid notation");
+                return Err(chess_errors::ChessErrors::InvalidNotation(msg));
             }
         }else {
             let msg = format!("Invalid notation");
@@ -208,14 +246,14 @@ impl Game {
     }
 }
 fn main() {
-    let mut chess_game = Game::default();
+    let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6","b6-b7","f5-f4"]);
     let mut game_over = false;
     while game_over == false {
         let mut move_notation=String::new();
         let prompt = {
             match  chess_game.state.player_turn{
-                visual::PLAYER::WHITE => format!("White's turn:(e.g a2-b2,or quit)").to_string(),
-                visual::PLAYER::BLACK => format!("Blacks's turn:(e.g a7-a6 or quit)").to_string(),
+                visual::PLAYER::WHITE => format!("White's turn:(e.g a2-b2,a7-a8pr or quit)").to_string(),
+                visual::PLAYER::BLACK => format!("Blacks's turn:(e.g a7-a6,a2-a1pq or quit)").to_string(),
             }
         };
         println!("{}", chess_game.state);
@@ -234,40 +272,27 @@ fn main() {
         if let Err(e) =chess_game.move_piece(&move_notation, chess_game.state.player_turn){
             println!("{}",e);
         }else {
+            chess_game.turn_history.push(move_notation.to_string());
             chess_game.state.player_turn = match chess_game.state.player_turn {
                 visual::PLAYER::WHITE => visual::PLAYER::BLACK,
                 visual::PLAYER::BLACK => visual::PLAYER::WHITE,
             };
         }
-        
-        
-    
     }
     
 
-    // let mut game_state = GameState::default();
-    // println!("{}", game_state);
-
-    // if let Ok((from, to)) = chess_notation_utilities::convert_move_notation_to_indexes("b2", "b3") {
-    //     game_state.move_piece(from, to);
-    //     println!("{}", game_state);
-    // }
-    // // let spot = "b2";
-    // // let bounds = chess_notation_utilities::get_bounds(spot, visual::PLAYER::BLACK);
-    // // println!("{} bounds is\n{}", spot, bounds);
-
-    // let spot = "B2".to_string().to_lowercase();
-    // if let Ok(index) = chess_notation_utilities::notation_to_index(&spot) {
-    //     if let Some(piece) = game_state.get_piece_at(index) {
-    //         println!("piece {}", piece.get_unicode_val());
-    //         if piece. move_down_one(&spot, &game_state).is_ok() {
-    //             println!("good");
-    //         } else {
-    //             println!("oops");
-    //         }
-    //     }
-    // } else {
-    // }
-
    
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn test_promotion() {
+        let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6","b6-b7","f5-f4"]);
+        assert_eq!(2,2);
+    }
+
 }
