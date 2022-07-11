@@ -52,7 +52,7 @@ impl fmt::Display for ChessErrors {
                 write!(f, "piece cannot move to {}", x)
             }
             ChessErrors::InvalidPromotion(x) => {
-                write!(f, "piece cannot be promoted at {}", x)
+                write!(f, "piece cannot be promoted to {}", x)
             }
             ChessErrors::PieceBetween(x) => {
                 write!(f, "piece cannot move  because one of your pieces is at {}", x)

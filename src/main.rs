@@ -136,11 +136,11 @@ impl Game {
             let to_row = chess_notation_utilities::convert_row(to_spot)?;
             println!("from_row {:?} to_row {:?}",from_row,to_row);
             if whos_turn == PLAYER::WHITE && to_row !=  0 &&  from_row != 1 {
-                let msg = format!("xxx{}",from_spot);
+                let msg = format!("xxx{}",to_spot);
                 return Err(chess_errors::ChessErrors::InvalidPromotion(msg));
             }
             if whos_turn == PLAYER::BLACK && to_row != 8 && from_row!= 7 {
-                let msg = format!("yyy{}",from_spot);
+                let msg = format!("yyy{}",to_spot);
                 return Err(chess_errors::ChessErrors::InvalidPromotion(msg));
             }
         }
@@ -163,7 +163,7 @@ impl Game {
             }
             if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
                 if let Some(piece) = self.state.get_piece_at(index) {
-                    piece.move_vertical(to_spot, &self.state, delta_y)?;
+                    piece.move_vertical(to_spot, &self.state, delta_y, promotion_opt)?;
                 }
             }
         } else if delta_y == 0{
@@ -180,7 +180,7 @@ impl Game {
             }
             if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
                 if let Some(piece) = self.state.get_piece_at(index) {
-                    piece.move_horizontal(to_spot, &self.state, delta_x)?;
+                    piece.move_horizontal(to_spot, &self.state, delta_x, promotion_opt)?;
                 }
             }
         }else if delta_x.abs() == delta_y.abs(){
@@ -203,7 +203,7 @@ impl Game {
             }
             if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
                 if let Some(piece) = self.state.get_piece_at(index) {
-                    piece.move_diagonal(to_spot, &self.state, delta_y )?;
+                    piece.move_diagonal(to_spot, &self.state, delta_y, promotion_opt)?;
                 }
             }
             // if diagonal deltas must be equal, except for Knight
@@ -211,7 +211,7 @@ impl Game {
         }else if (delta_x.abs() == 2 && delta_y.abs() ==1) || (delta_x.abs() == 1 && delta_y.abs() ==2){
             if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
                 if let Some(piece) = self.state.get_piece_at(index) {
-                    piece.move_knight(to_spot, &self.state)?;
+                    piece.move_knight(to_spot, &self.state, promotion_opt)?;
                 }
             }
         }
@@ -246,7 +246,7 @@ impl Game {
     }
 }
 fn main() {
-    let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6","b6-b7","f5-f4"]);
+    let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6","b6-b7","f5-f4","a1-a7","g7-g6"]);
     let mut game_over = false;
     while game_over == false {
         let mut move_notation=String::new();
@@ -291,8 +291,14 @@ mod tests {
 
     #[test]
     fn test_promotion() {
-        let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6","b6-b7","f5-f4"]);
-        assert_eq!(2,2);
+        //pawns reaching 8th rank can be promoted
+        let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6","b6-b7","f5-f4","a1-a7","g7-g6"]);
+        let good_move= chess_game.move_piece("b7-b8", chess_game.state.player_turn);
+        assert!(good_move.is_ok());
+        let bad_move= chess_game.move_piece("g7-g5pq", chess_game.state.player_turn);
+        assert!(bad_move.is_err());
+        let bad_move= chess_game.move_piece("a7-a8pq", chess_game.state.player_turn);
+        assert!(bad_move.is_err());
     }
 
 }
