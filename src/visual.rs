@@ -121,7 +121,20 @@ impl GamePiece for Pawn {
                             return Ok((to_spot.to_string(),MoveType::Promotion(BLACK_QUEEN)))
                         },
                         Some(promotion) => {
-                            return Ok((to_spot.to_string(),MoveType::Promotion(BLACK_QUEEN)));
+                            match promotion {
+                                "r" => {
+                                    return Ok((to_spot.to_string(),MoveType::Promotion(BLACK_ROOK)));
+                                },
+                                "b" => {
+                                    return Ok((to_spot.to_string(),MoveType::Promotion(BLACK_BISHOP)));
+                                },
+                                "k" => {
+                                    return Ok((to_spot.to_string(),MoveType::Promotion(BLACK_KNIGHT)));
+                                },
+                                _ => {
+                                    return Ok((to_spot.to_string(),MoveType::Promotion(BLACK_QUEEN)));
+                                },
+                            }
                         }
                     }
                 }
@@ -132,7 +145,21 @@ impl GamePiece for Pawn {
                             return Ok((to_spot.to_string(),MoveType::Promotion(WHITE_QUEEN)))
                         },
                         Some(promotion) => {
-                            return Ok((to_spot.to_string(),MoveType::Promotion(WHITE_QUEEN)));
+                            match promotion {
+                                "r" => {
+                                    return Ok((to_spot.to_string(),MoveType::Promotion(WHITE_ROOK)));
+                                },
+                                "b" => {
+                                    return Ok((to_spot.to_string(),MoveType::Promotion(WHITE_BISHOP)));
+                                },
+                                "k" => {
+                                    return Ok((to_spot.to_string(),MoveType::Promotion(WHITE_KNIGHT)));
+                                },
+                                _ => {
+                                    return Ok((to_spot.to_string(),MoveType::Promotion(WHITE_QUEEN)));
+                                },
+                            }
+                            
                         }
                     }
                 }
@@ -560,23 +587,71 @@ impl Default for GameState {
 }
 
 impl GameState {
-    fn game_piece(&self, piece_char:char) -> Option<Rc<dyn GamePiece>>{
+    fn promotion_game_piece(&self, piece_char:char) -> Option<Rc<dyn GamePiece>>{
         match piece_char{
             (WHITE_QUEEN) => {
                 let white_queen = Queen {
-                                unicode_val: WHITE_QUEEN,
+                                unicode_val: piece_char,
                                 player: PLAYER::WHITE,
                                 moved: RefCell::new(true) ,
                             };
                 Some(Rc::new(white_queen))
             },
+            (WHITE_ROOK) => {
+                let white_rook = Rook {
+                                unicode_val: piece_char,
+                                player: PLAYER::WHITE,
+                                moved: RefCell::new(true) ,
+                            };
+                Some(Rc::new(white_rook))
+            },
+            (WHITE_BISHOP) => {
+                let white_bishop = Bishop {
+                                unicode_val: piece_char,
+                                player: PLAYER::WHITE,
+                                moved: RefCell::new(true) ,
+                            };
+                Some(Rc::new(white_bishop))
+            },
+            (WHITE_KNIGHT) => {
+                let white_knight = Knight {
+                                unicode_val: piece_char,
+                                player: PLAYER::WHITE,
+                                moved: RefCell::new(true) ,
+                            };
+                Some(Rc::new(white_knight))
+            },
             (BLACK_QUEEN) => {
                 let black_queen = Queen {
-                    unicode_val: BLACK_QUEEN,
+                    unicode_val: piece_char,
                     player: PLAYER::BLACK,
                     moved: RefCell::new(true) ,
                 };
                 Some(Rc::new(black_queen))
+            },
+            (BLACK_ROOK) => {
+                let black_rook = Rook {
+                    unicode_val: piece_char,
+                    player: PLAYER::BLACK,
+                    moved: RefCell::new(true) ,
+                };
+                Some(Rc::new(black_rook))
+            },
+            (BLACK_KNIGHT) => {
+                let black_knight = Knight {
+                    unicode_val: piece_char,
+                    player: PLAYER::BLACK,
+                    moved: RefCell::new(true) ,
+                };
+                Some(Rc::new(black_knight))
+            },
+            (BLACK_BISHOP) => {
+                let black_bishop = Bishop {
+                    unicode_val: piece_char,
+                    player: PLAYER::BLACK,
+                    moved: RefCell::new(true) ,
+                };
+                Some(Rc::new(black_bishop))
             },
             _ => None
         }
@@ -591,7 +666,7 @@ impl GameState {
             self.en_passant_enabled = None;
         }
         if let MoveType::Promotion(piece_char) =  move_type{
-            let new_piece = self.game_piece(piece_char);
+            let new_piece = self.promotion_game_piece(piece_char);
             if new_piece.is_some() {
                 let _= std::mem::replace(&mut self.state[to], new_piece);
             }
