@@ -38,6 +38,7 @@ pub trait GamePiece : std::fmt::Debug {
     fn move_knight(&self, to_spot: &str, state: &GameState) -> Result<String, chess_errors::ChessErrors>;
     fn get_player(&self) -> PLAYER;
     fn toggle_moved(&self);
+    fn get_moved(&self) -> bool;
 }
 #[derive(Debug)]
 pub struct Pawn {
@@ -52,6 +53,9 @@ impl fmt::Display for Pawn {
 }
 
 impl GamePiece for Pawn {
+    fn get_moved(&self) -> bool {
+        *self.moved.borrow_mut() == true
+    }
     fn toggle_moved(&self){
         self.moved.replace(true);
     }
@@ -83,6 +87,22 @@ impl GamePiece for Pawn {
             //pawns cannot move vert more than 2
             let msg = format!("{}",to_spot);
             return Err(chess_errors::ChessErrors::InvalidMove(msg));
+        }
+        if deltaY.abs() == 2 {
+             //pawns cannot move vert more than 1, if they moved before
+             if self.get_moved() {
+                let msg = format!("{}",to_spot);
+                return Err(chess_errors::ChessErrors::InvalidMove(msg));
+             }
+            //  if let Ok(index) = chess_notation_utilities::notation_to_index(&to_spot) {
+            //     if  let Some(piece) = state.get_piece_at(index){
+            //         if piece.get_moved() == true{
+            //             let msg = format!("{}",to_spot);
+            //             return Err(chess_errors::ChessErrors::InvalidMove(msg));
+            //         }
+            //     }
+            // }
+             
         }
         if self.get_player() == PLAYER::BLACK && deltaY > 0 {
             //black pawn annot move up
@@ -118,6 +138,9 @@ impl fmt::Display for Rook {
 }
 
 impl GamePiece for Rook {
+    fn get_moved(&self) -> bool {
+        self.moved == RefCell::new(true)
+    }
     fn toggle_moved(&self){
         self.moved.replace(true);
     }
@@ -156,6 +179,9 @@ impl fmt::Display for Knight {
 }
 
 impl GamePiece for Knight {
+    fn get_moved(&self) -> bool {
+        self.moved == RefCell::new(true)
+    }
     fn toggle_moved(&self){
         self.moved.replace(true);
     }
@@ -195,6 +221,9 @@ impl fmt::Display for Bishop {
 }
 
 impl GamePiece for Bishop {
+    fn get_moved(&self) -> bool {
+        self.moved == RefCell::new(true)
+    }
     fn toggle_moved(&self){
         self.moved.replace(true);
     }
@@ -234,6 +263,9 @@ impl fmt::Display for Queen {
 }
 
 impl GamePiece for Queen {
+    fn get_moved(&self) -> bool {
+        self.moved == RefCell::new(true)
+    }
     fn toggle_moved(&self){
         self.moved.replace(true);
     }
@@ -271,6 +303,9 @@ impl fmt::Display for King {
 }
 
 impl GamePiece for King {
+    fn get_moved(&self) -> bool {
+        self.moved == RefCell::new(true)
+    }
     fn toggle_moved(&self){
         self.moved.replace(true);
     }
@@ -366,17 +401,6 @@ impl Default for GameState {
             player: PLAYER::BLACK,
             moved: RefCell::new(false) ,
         };
-        let black_pawn_rc = Rc::new(Pawn {
-            unicode_val: BLACK_PAWN,
-            player: PLAYER::BLACK,
-            moved: RefCell::new(false) ,
-        });
-
-        let white_pawn_rc = Rc::new(Pawn {
-            unicode_val: WHITE_PAWN,
-            player: PLAYER::WHITE,
-            moved: RefCell::new(false) ,
-        });
         let white_rook1 = Rook {
             unicode_val: WHITE_ROOK,
             player: PLAYER::WHITE,
@@ -428,13 +452,23 @@ impl Default for GameState {
         pieces.push(Some(Rc::new(black_knight2)));
         pieces.push(Some(Rc::new(black_rook2)));
         for x in 0..8 {
-            pieces.push(Some(black_pawn_rc.clone()));
+            let black_pawn = Pawn {
+                unicode_val: BLACK_PAWN,
+                player: PLAYER::BLACK,
+                moved: RefCell::new(false) ,
+            };
+            pieces.push(Some(Rc::new(black_pawn)));
         }
         for x in 0..32 {
             pieces.push(None);
         }
         for x in 0..8 {
-            pieces.push(Some(white_pawn_rc.clone()));
+            let white_pawn = Pawn {
+                unicode_val: WHITE_PAWN,
+                player: PLAYER::WHITE,
+                moved: RefCell::new(false) ,
+            };
+            pieces.push(Some(Rc::new(white_pawn)));
         }
         pieces.push(Some(Rc::new(white_rook1)));
         pieces.push(Some(Rc::new(white_knight1)));
