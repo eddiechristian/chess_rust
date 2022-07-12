@@ -45,6 +45,18 @@ impl fmt::Display for Bounds {
         } else {
             write!(f, "right: None\n")?;
         }
+        if let Some(c) = self.top_left_diag {
+            let a = std::str::from_utf8(&c).unwrap();
+            write!(f, "top_left_diag: {}\n", a)?;
+        } else {
+            write!(f, "top_left_diag: None\n")?;
+        }
+        if let Some(c) = self.top_right_diag {
+            let a = std::str::from_utf8(&c).unwrap();
+            write!(f, "top_right_diag: {}\n", a)?;
+        } else {
+            write!(f, "top_right_diag: None\n")?;
+        }
         write!(f, "\n")
     }
 }
@@ -74,6 +86,144 @@ pub fn plus_one_col(the_col: char) -> Option<char> {
         _ => None,
     }
 }
+
+pub fn get_unvalidated_diag_moves(spot: &str)->Result<Vec<String>, chess_errors::ChessErrors> {
+    let mut right_top_spots = Vec::new();
+    let mut right_bottom_spots = Vec::new();
+    let mut left_bottom_spots = Vec::new();
+    let mut left_top_spots = Vec::new();
+
+    let mut right_top_pos_opt = Some(spot.to_string());
+                
+    loop {
+            let bounds = get_bounds(&right_top_pos_opt.unwrap())?;
+            if let Some(right_top_pos_array) = bounds.top_right_diag{
+                let right_top_pos = std::str::from_utf8(&right_top_pos_array).unwrap();
+                let value = format!("{}-{}",spot,right_top_pos);
+                right_top_spots.push(value);
+                right_top_pos_opt = Some(right_top_pos.to_string());
+            } else {
+                break;
+            }
+
+    }
+    let mut right_bottom_pos_opt = Some(spot.to_string());
+    loop {
+            let bounds = get_bounds(&right_bottom_pos_opt.unwrap())?;
+            if let Some(right_bottom_pos_array) = bounds.bottom_right_diag{
+                let right_bottom_pos = std::str::from_utf8(&right_bottom_pos_array).unwrap();
+                let value = format!("{}-{}",spot,right_bottom_pos);
+                right_bottom_spots.push(value);
+                right_bottom_pos_opt = Some(right_bottom_pos.to_string());
+            } else {
+                break;
+            }
+
+    }
+    
+    let mut left_bottom_pos_opt = Some(spot.to_string());
+    loop {
+            let bounds = get_bounds(&left_bottom_pos_opt.unwrap())?;
+            if let Some(left_bottom_pos_array) = bounds.bottom_left_diag{
+                let left_bottom_pos = std::str::from_utf8(&left_bottom_pos_array).unwrap();
+                let value = format!("{}-{}",spot,left_bottom_pos);
+                left_bottom_spots.push(value);
+                left_bottom_pos_opt = Some(left_bottom_pos.to_string());
+            } else {
+                break;
+            }
+
+    }
+    
+    let mut left_top_pos_opt = Some(spot.to_string());
+    loop {
+            let bounds = get_bounds(&left_top_pos_opt.unwrap())?;
+            if let Some(left_top_pos_array) = bounds.top_left_diag{
+                let left_top_pos = std::str::from_utf8(&left_top_pos_array).unwrap();
+                let value = format!("{}-{}",spot,left_top_pos);
+                left_top_spots.push(value);
+                left_top_pos_opt = Some(left_top_pos.to_string());
+            } else {
+                break;
+            }
+
+    }
+
+    right_top_spots.append(&mut right_bottom_spots);
+    right_top_spots.append(&mut left_bottom_spots);
+    right_top_spots.append(&mut left_top_spots);
+    Ok(right_top_spots)
+}
+
+
+pub fn get_unvalidated_horiz_vert_moves(spot: &str)->Result<Vec<String>, chess_errors::ChessErrors> {
+    let mut right_spots = Vec::new();
+    let mut top_spots = Vec::new();
+    let mut bottom_spots = Vec::new();
+    let mut left_spots = Vec::new();
+
+    let mut right_pos_opt = Some(spot.to_string());
+    loop {
+            let bounds = get_bounds(&right_pos_opt.unwrap())?;
+            if let Some(right_pos_array) = bounds.right{
+                let right_pos = std::str::from_utf8(&right_pos_array).unwrap();
+                let value = format!("{}-{}",spot,right_pos);
+                right_spots.push(value);
+                right_pos_opt = Some(right_pos.to_string());
+            } else {
+                break;
+            }
+
+    }
+    
+    let mut top_pos_opt = Some(spot.to_string());
+    loop {
+            let bounds = get_bounds(&top_pos_opt.unwrap())?;
+            if let Some(top_pos_array) = bounds.top{
+                let top_pos = std::str::from_utf8(&top_pos_array).unwrap();
+                let value = format!("{}-{}",spot,top_pos);
+                top_spots.push(value);
+                top_pos_opt = Some(top_pos.to_string());
+            } else {
+                break;
+            }
+
+    }
+        
+    let mut bottom_pos_opt = Some(spot.to_string());
+    loop {
+            let bounds = get_bounds(&bottom_pos_opt.unwrap())?;
+            if let Some(bottom_pos_array) = bounds.bottom{
+                let bottom_pos = std::str::from_utf8(&bottom_pos_array).unwrap();
+                let value = format!("{}-{}",spot,bottom_pos);
+                bottom_spots.push(value);
+                bottom_pos_opt = Some(bottom_pos.to_string());
+            } else {
+                break;
+            }
+
+    }
+    
+    let mut left_pos_opt = Some(spot.to_string());
+    loop {
+            let bounds = get_bounds(&left_pos_opt.unwrap())?;
+            if let Some(left_pos_array) = bounds.left{
+                let left_pos = std::str::from_utf8(&left_pos_array).unwrap();
+                let value = format!("{}-{}",spot,left_pos);
+                left_spots.push(value);
+                left_pos_opt = Some(left_pos.to_string());
+            } else {
+                break;
+            }
+
+    }
+
+    right_spots.append(&mut top_spots);
+    right_spots.append(&mut bottom_spots);
+    right_spots.append(&mut left_spots);
+    Ok(right_spots)
+}
+
 
 pub fn check_for_valid_notation(spot: &str) -> Result<bool, chess_errors::ChessErrors> {
     match &spot.chars().nth(0).unwrap() {
@@ -245,14 +395,14 @@ pub fn get_bounds(spot: &str) -> Result<Bounds, chess_errors::ChessErrors> {
             | col_char @ 'g'
             | col_char @ 'h' => {
                 match &spot.chars().nth(1).unwrap() {
-                    '1' => None,
-                    row_char @ '8'
-                    | row_char @ '7'
+                    '8' => None,
+                    row_char @ '7'
                     | row_char @ '6'
                     | row_char @ '5'
                     | row_char @ '4'
                     | row_char @ '3'
-                    | row_char @ '2' => {
+                    | row_char @ '2'
+                    | row_char @ '1' => {
                         let mut row = row_char.to_digit(10).unwrap();
                         row += 1;
                         let y = format!("{}{}", minus_one_col(*col_char).unwrap(), row);
@@ -275,14 +425,14 @@ pub fn get_bounds(spot: &str) -> Result<Bounds, chess_errors::ChessErrors> {
             | col_char @ 'f'
             | col_char @ 'g' => {
                 match &spot.chars().nth(1).unwrap() {
-                    '1' => None,
-                    row_char @ '8'
-                    | row_char @ '7'
+                    '8' => None,
+                    row_char @ '7'
                     | row_char @ '6'
                     | row_char @ '5'
                     | row_char @ '4'
                     | row_char @ '3'
-                    | row_char @ '2' => {
+                    | row_char @ '2'
+                    | row_char @ '1' => {
                         let mut row = row_char.to_digit(10).unwrap();
                         row += 1;
                         let y = format!("{}{}", plus_one_col(*col_char).unwrap(), row);
@@ -307,6 +457,40 @@ pub fn get_bounds(spot: &str) -> Result<Bounds, chess_errors::ChessErrors> {
         bottom_right_diag: bottom_right_diag,
     };
    Ok(bounds)
+}
+
+pub fn index_to_spot(index: usize) -> String{
+    let row = index / 8;
+    let col = index % 8;
+    let first_char_opt = match col {
+            0 => Some('a'),
+            1 => Some('b'),
+            2 => Some('c'),
+            3 => Some('d'),
+            4 => Some('e'),
+            5 => Some('f'),
+            6 => Some('g'),
+            7 => Some('h'),
+            _ => None,
+    };
+    let second_char_opt = match row {
+        0 => Some('8'),
+        1 => Some('7'),
+        2 => Some('6'),
+        3 => Some('5'),
+        4 => Some('4'),
+        5 => Some('3'),
+        6 => Some('2'),
+        7 => Some('1'),
+        _ => None,
+    };
+    if let Some(first_char) = first_char_opt {
+        if let Some(second_char) = second_char_opt {
+            let spot = format!("{}{}",first_char,second_char);
+            return spot;
+        }
+    }
+    "".to_string()
 }
 
 pub fn convert_col(spot: &str) -> Result<usize, chess_errors::ChessErrors> {

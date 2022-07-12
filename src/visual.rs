@@ -47,6 +47,7 @@ pub trait GamePiece : std::fmt::Debug {
     fn get_player(&self) -> PLAYER;
     fn toggle_moved(&self);
     fn get_moved(&self) -> bool;
+    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors>;
 }
 #[derive(Debug)]
 pub struct Pawn {
@@ -61,6 +62,11 @@ impl fmt::Display for Pawn {
 }
 
 impl GamePiece for Pawn {
+    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
+        let mut unvalidated_moves = Vec::new();
+        Ok((unvalidated_moves))
+    }
+
     fn get_moved(&self) -> bool {
         *self.moved.borrow_mut() == true
     }
@@ -200,6 +206,9 @@ impl fmt::Display for Rook {
 }
 
 impl GamePiece for Rook {
+    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors>  {
+        chess_notation_utilities::get_unvalidated_horiz_vert_moves(spot)
+    }
     fn get_moved(&self) -> bool {
         self.moved == RefCell::new(true)
     }
@@ -249,6 +258,10 @@ impl fmt::Display for Knight {
 }
 
 impl GamePiece for Knight {
+    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
+        let mut unvalidated_moves = Vec::new();
+        Ok((unvalidated_moves))
+    }
     fn get_moved(&self) -> bool {
         self.moved == RefCell::new(true)
     }
@@ -295,6 +308,9 @@ impl fmt::Display for Bishop {
 }
 
 impl GamePiece for Bishop {
+    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
+        chess_notation_utilities::get_unvalidated_diag_moves(spot)
+    }
     fn get_moved(&self) -> bool {
         self.moved == RefCell::new(true)
     }
@@ -341,6 +357,10 @@ impl fmt::Display for Queen {
 }
 
 impl GamePiece for Queen {
+    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
+        let mut unvalidated_moves = Vec::new();
+        Ok((unvalidated_moves))
+    }
     fn get_moved(&self) -> bool {
         self.moved == RefCell::new(true)
     }
@@ -393,6 +413,10 @@ impl fmt::Display for King {
 }
 
 impl GamePiece for King {
+    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
+        let mut unvalidated_moves = Vec::new();
+        Ok((unvalidated_moves))
+    }
     fn get_moved(&self) -> bool {
         self.moved == RefCell::new(true)
     }
@@ -587,6 +611,20 @@ impl Default for GameState {
 }
 
 impl GameState {
+    pub fn get_unvalidated_moves(&self) -> Option<Vec<String>>{
+        //let mut unvalidated_moves = Vec::new();
+        for (index, piece_opt) in self.state.iter().enumerate(){
+            if  let Some(piece) = piece_opt {
+                let spot = chess_notation_utilities::index_to_spot(index);
+                let moves = piece.get_unvalidated_moves(&spot);
+                //println!("spot: {:?} moves: {:?}",spot, moves);
+            }
+            
+            
+        }
+        None
+    }
+
     fn promotion_game_piece(&self, piece_char:char) -> Option<Rc<dyn GamePiece>>{
         match piece_char{
             (WHITE_QUEEN) => {
