@@ -469,6 +469,49 @@ impl fmt::Display for King {
 impl GamePiece for King {
     fn get_unvalidated_moves(&self, state: &GameState, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
         let mut unvalidated_moves = Vec::new();
+        let bounds = chess_notation_utilities::get_bounds(spot)?;
+
+        if let Some(top_right_array) = bounds.top_right_diag {
+            let top_right = std::str::from_utf8(&top_right_array).unwrap();
+            let unvalidated_move = format!("{}-{}",spot,top_right);
+            unvalidated_moves.push(unvalidated_move);
+        }
+        if let Some(top_left_array) = bounds.top_left_diag {
+            let top_left = std::str::from_utf8(&top_left_array).unwrap();
+            let unvalidated_move = format!("{}-{}",spot,top_left);
+            unvalidated_moves.push(unvalidated_move);
+        }
+        if let Some(bottom_left_array) = bounds.bottom_left_diag {
+            let bottom_left = std::str::from_utf8(&bottom_left_array).unwrap();
+            let unvalidated_move = format!("{}-{}",spot,bottom_left);
+            unvalidated_moves.push(unvalidated_move);
+        }
+        if let Some(bottom_right_array) = bounds.bottom_right_diag {
+            let bottom_right = std::str::from_utf8(&bottom_right_array).unwrap();
+            let unvalidated_move = format!("{}-{}",spot,bottom_right);
+            unvalidated_moves.push(unvalidated_move);
+        }
+        if let Some(bottom_array) = bounds.bottom {
+            let bottom = std::str::from_utf8(&bottom_array).unwrap();
+            let unvalidated_move = format!("{}-{}",spot,bottom);
+            unvalidated_moves.push(unvalidated_move);
+        }
+        if let Some(top_array) = bounds.top {
+            let top = std::str::from_utf8(&top_array).unwrap();
+            let unvalidated_move = format!("{}-{}",spot,top);
+            unvalidated_moves.push(unvalidated_move);
+        }
+        if let Some(left_array) = bounds.left {
+            let left = std::str::from_utf8(&left_array).unwrap();
+            let unvalidated_move = format!("{}-{}",spot,left);
+            unvalidated_moves.push(unvalidated_move);
+        }
+        if let Some(right_array) = bounds.right {
+            let right = std::str::from_utf8(&right_array).unwrap();
+            let unvalidated_move = format!("{}-{}",spot,right);
+            unvalidated_moves.push(unvalidated_move);
+        }
+
         Ok((unvalidated_moves))
     }
     fn get_moved(&self) -> bool {
