@@ -108,6 +108,19 @@ impl Game {
         }
         Ok(())
     }
+    pub fn get_validated_moves(&self, player: PLAYER) -> Vec<String>{
+        let mut validated_moves = Vec::new();
+        let mut unvalidated_moves = self.state.get_unvalidated_moves(player);
+        for (index, piece_move) in unvalidated_moves.iter().enumerate(){
+            let move_spots: Vec<&str> = piece_move.split("-").collect();
+            if self.is_move_valid(move_spots[0],move_spots[1], player, None).is_ok(){
+                validated_moves.push(piece_move.clone());
+            }
+        }
+        println!("validated_moves: {:?}", validated_moves);
+        validated_moves
+    }
+
     fn is_move_valid(&self, from_spot: &str, to_spot: &str, whos_turn: visual::PLAYER, promotion_opt: Option<&str>)->Result<(visual::MoveType), chess_errors::ChessErrors> {
         // first determine if piece at from is correct player.
         if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
@@ -235,7 +248,7 @@ impl Game {
         }
 
         //check for current player in check
-        Ok((visual::MoveType::Regular))
+        Ok(visual::MoveType::Regular)
     }
 
     fn check_en_passant (&mut self ,from_spot: &str, to_spot: &str, whos_turn: visual::PLAYER)->Result<(), chess_errors::ChessErrors> {
@@ -363,7 +376,7 @@ fn main() {
     //  let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6",
     //      "b6-b7","f5-f4","a1-a7","g7-g6","d2-d4","h7-h5","d4-d5","h5-h4", "b2-b4","c6-a5", "b4-b5","c7-c5"]);  
     let mut chess_game = Game::default();   
-    chess_game.state.get_unvalidated_moves();
+    chess_game.get_validated_moves(chess_game.state.player_turn);
     let mut game_over = false;
     while game_over == false {
         let mut move_notation=String::new();

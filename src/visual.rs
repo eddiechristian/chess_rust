@@ -117,7 +117,7 @@ impl GamePiece for Pawn {
             }
         } 
         
-        Ok((unvalidated_moves))
+        Ok(unvalidated_moves)
     }
 
     fn get_moved(&self) -> bool {
@@ -395,7 +395,7 @@ impl GamePiece for Knight {
             let mut unvalidated_move = format!("{}-{}",spot, chess_notation_utilities::index_to_spot(dn1lf2_index as usize));
             unvalidated_moves.push(unvalidated_move);
         }
-        Ok((unvalidated_moves))
+        Ok(unvalidated_moves)
     }
     fn get_moved(&self) -> bool {
         self.moved == RefCell::new(true)
@@ -495,7 +495,7 @@ impl GamePiece for Queen {
     fn get_unvalidated_moves(&self, state: &GameState, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
         let mut unvalidated_moves = chess_notation_utilities::get_unvalidated_diag_moves(spot)?;
         unvalidated_moves.append(&mut chess_notation_utilities::get_unvalidated_horiz_vert_moves(spot)?);
-        Ok((unvalidated_moves))
+        Ok(unvalidated_moves)
     }
     fn get_moved(&self) -> bool {
         self.moved == RefCell::new(true)
@@ -594,7 +594,7 @@ impl GamePiece for King {
             unvalidated_moves.push(unvalidated_move);
         }
 
-        Ok((unvalidated_moves))
+        Ok(unvalidated_moves)
     }
     fn get_moved(&self) -> bool {
         self.moved == RefCell::new(true)
@@ -790,23 +790,28 @@ impl Default for GameState {
 }
 
 impl GameState {
-    pub fn get_unvalidated_moves(&self) -> Option<Vec<String>>{
-        //let mut unvalidated_moves = Vec::new();
+    pub fn get_unvalidated_moves(&self, player: PLAYER) -> Vec<String>{
+        let mut unvalidated_moves = Vec::new();
         for (index, piece_opt) in self.state.iter().enumerate(){
             if  let Some(piece) = piece_opt {
-                let spot = chess_notation_utilities::index_to_spot(index);
-                let moves = piece.get_unvalidated_moves(self, &spot);
-                println!("spot: {:?} moves: {:?}",spot, moves);
+                if piece.get_player() == player {
+                    let spot = chess_notation_utilities::index_to_spot(index);
+                    if let Ok( mut unvalidated_moves_piece) = piece.get_unvalidated_moves(self, &spot){
+                        unvalidated_moves.append(&mut unvalidated_moves_piece);
+                    }
+                }
             }
             
             
         }
-        None
+        //println!("unvalidated_moves {:?}", unvalidated_moves);
+        unvalidated_moves
+        
     }
 
     fn promotion_game_piece(&self, piece_char:char) -> Option<Rc<dyn GamePiece>>{
         match piece_char{
-            (WHITE_QUEEN) => {
+            WHITE_QUEEN => {
                 let white_queen = Queen {
                                 unicode_val: piece_char,
                                 player: PLAYER::WHITE,
@@ -814,7 +819,7 @@ impl GameState {
                             };
                 Some(Rc::new(white_queen))
             },
-            (WHITE_ROOK) => {
+            WHITE_ROOK => {
                 let white_rook = Rook {
                                 unicode_val: piece_char,
                                 player: PLAYER::WHITE,
@@ -822,7 +827,7 @@ impl GameState {
                             };
                 Some(Rc::new(white_rook))
             },
-            (WHITE_BISHOP) => {
+            WHITE_BISHOP => {
                 let white_bishop = Bishop {
                                 unicode_val: piece_char,
                                 player: PLAYER::WHITE,
@@ -830,7 +835,7 @@ impl GameState {
                             };
                 Some(Rc::new(white_bishop))
             },
-            (WHITE_KNIGHT) => {
+            WHITE_KNIGHT => {
                 let white_knight = Knight {
                                 unicode_val: piece_char,
                                 player: PLAYER::WHITE,
@@ -838,7 +843,7 @@ impl GameState {
                             };
                 Some(Rc::new(white_knight))
             },
-            (BLACK_QUEEN) => {
+            BLACK_QUEEN => {
                 let black_queen = Queen {
                     unicode_val: piece_char,
                     player: PLAYER::BLACK,
@@ -846,7 +851,7 @@ impl GameState {
                 };
                 Some(Rc::new(black_queen))
             },
-            (BLACK_ROOK) => {
+            BLACK_ROOK => {
                 let black_rook = Rook {
                     unicode_val: piece_char,
                     player: PLAYER::BLACK,
@@ -854,7 +859,7 @@ impl GameState {
                 };
                 Some(Rc::new(black_rook))
             },
-            (BLACK_KNIGHT) => {
+            BLACK_KNIGHT => {
                 let black_knight = Knight {
                     unicode_val: piece_char,
                     player: PLAYER::BLACK,
@@ -862,7 +867,7 @@ impl GameState {
                 };
                 Some(Rc::new(black_knight))
             },
-            (BLACK_BISHOP) => {
+            BLACK_BISHOP => {
                 let black_bishop = Bishop {
                     unicode_val: piece_char,
                     player: PLAYER::BLACK,
