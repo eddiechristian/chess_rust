@@ -313,6 +313,88 @@ impl fmt::Display for Knight {
 impl GamePiece for Knight {
     fn get_unvalidated_moves(&self, state: &GameState, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
         let mut unvalidated_moves = Vec::new();
+        let col_spot:u8  = (chess_notation_utilities::convert_col(spot)?) as u8;
+        let row_spot:u8 = (chess_notation_utilities::convert_row(spot)?)as u8;
+        let row_minus2 = match row_spot{
+            2..=7 => Some(row_spot - 2),
+            _ => None,
+        };
+        let row_minus1 = match row_spot{
+            1..=7 => Some(row_spot - 1),
+            _ => None,
+        };
+        let col_minus2 = match col_spot{
+            2..=7 => Some(col_spot - 2),
+            _ => None,
+        };
+        let col_minus1 = match col_spot{
+            1..=7 => Some(col_spot - 1),
+            _ => None,
+        };
+        let row_plus2 = match row_spot{
+            0..=5 => Some(row_spot + 2),
+            _ => None,
+        };
+        let row_plus1 = match row_spot{
+            0..=6 => Some(row_spot + 1),
+            _ => None,
+        };
+        let col_plus2 = match col_spot{
+            0..=5 => Some(col_spot + 2),
+            _ => None,
+        };
+        let col_plus1 = match col_spot{
+            0..=6 => Some(col_spot + 1),
+            _ => None,
+        };
+        //up 2 right 1
+        if row_minus2.is_some() && col_plus1.is_some() {
+            let up2rt1_index = row_minus2.unwrap() * 8 + col_plus1.unwrap();
+            let mut unvalidated_move = format!("{}-{}",spot, chess_notation_utilities::index_to_spot(up2rt1_index as usize));
+            unvalidated_moves.push(unvalidated_move);
+        }
+        //up 1 right 2
+        if row_minus1.is_some() && col_plus2.is_some() {
+            let up1rt2_index = row_minus1.unwrap() * 8 + col_plus2.unwrap();
+            let mut unvalidated_move = format!("{}-{}",spot, chess_notation_utilities::index_to_spot(up1rt2_index as usize));
+            unvalidated_moves.push(unvalidated_move);
+        }
+        //up 2 left 1
+        if row_minus2.is_some() && col_minus1.is_some() {
+            let up2lf1_index = row_minus2.unwrap() * 8 + col_minus1.unwrap();
+            let mut unvalidated_move = format!("{}-{}",spot, chess_notation_utilities::index_to_spot(up2lf1_index as usize));
+            unvalidated_moves.push(unvalidated_move);
+        }
+        //up 1 left 2
+        if row_minus1.is_some() && col_minus2.is_some() {
+            let up1lf2_index = row_minus1.unwrap() * 8 + col_minus2.unwrap();
+            let mut unvalidated_move = format!("{}-{}",spot, chess_notation_utilities::index_to_spot(up1lf2_index as usize));
+            unvalidated_moves.push(unvalidated_move);
+        }
+        //down 2 right 1
+        if row_plus2.is_some() && col_plus1.is_some() {
+            let dn2rt1_index = row_plus2.unwrap() * 8 + col_plus1.unwrap();
+            let mut unvalidated_move = format!("{}-{}",spot, chess_notation_utilities::index_to_spot(dn2rt1_index as usize));
+            unvalidated_moves.push(unvalidated_move);
+        }
+        //down 1 right 2
+        if row_plus1.is_some() && col_plus2.is_some() {
+            let dn1rt2_index = row_plus1.unwrap() * 8 + col_plus2.unwrap();
+            let mut unvalidated_move = format!("{}-{}",spot, chess_notation_utilities::index_to_spot(dn1rt2_index as usize));
+            unvalidated_moves.push(unvalidated_move);
+        }
+        //down 2 left 1
+        if row_plus2.is_some() && col_minus1.is_some() {
+            let dn2lf1_index = row_plus2.unwrap() * 8 + col_minus1.unwrap();
+            let mut unvalidated_move = format!("{}-{}",spot, chess_notation_utilities::index_to_spot(dn2lf1_index as usize));
+            unvalidated_moves.push(unvalidated_move);
+        }
+        //down 1 left 2
+        if row_plus1.is_some() && col_minus2.is_some() {
+            let dn1lf2_index = row_plus1.unwrap() * 8 + col_minus2.unwrap();
+            let mut unvalidated_move = format!("{}-{}",spot, chess_notation_utilities::index_to_spot(dn1lf2_index as usize));
+            unvalidated_moves.push(unvalidated_move);
+        }
         Ok((unvalidated_moves))
     }
     fn get_moved(&self) -> bool {
