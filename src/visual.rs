@@ -47,7 +47,7 @@ pub trait GamePiece : std::fmt::Debug {
     fn get_player(&self) -> PLAYER;
     fn toggle_moved(&self);
     fn get_moved(&self) -> bool;
-    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors>;
+    fn get_unvalidated_moves(&self, state: &GameState, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors>;
 }
 #[derive(Debug)]
 pub struct Pawn {
@@ -62,8 +62,61 @@ impl fmt::Display for Pawn {
 }
 
 impl GamePiece for Pawn {
-    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
+    fn get_unvalidated_moves(&self, state: &GameState, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
         let mut unvalidated_moves = Vec::new();
+        let bounds = chess_notation_utilities::get_bounds(spot)?;
+        if let Ok(index) = chess_notation_utilities::notation_to_index(&spot) {
+            if  let Some(piece) = state.get_piece_at(index){
+                if piece.get_player() == PLAYER::WHITE{
+                    let (top_opt, top_right_opt, top_left_opt) = (bounds.top, bounds.top_right_diag, bounds.top_left_diag);
+                    if let Some(top_array) = top_opt {
+                        let top = std::str::from_utf8(&top_array).unwrap();
+                        let unvalidated_move = format!("{}-{}",spot,top);
+                        unvalidated_moves.push(unvalidated_move);
+                        let next_bounds = chess_notation_utilities::get_bounds(top)?;
+                        if let Some(next_top_array) = next_bounds.top {
+                            let next_top = std::str::from_utf8(&next_top_array).unwrap();
+                            let unvalidated_move = format!("{}-{}",spot,next_top);
+                            unvalidated_moves.push(unvalidated_move);
+                        }
+                    }
+                    if let Some(top_right_array) = top_right_opt {
+                        let top_right = std::str::from_utf8(&top_right_array).unwrap();
+                        let unvalidated_move = format!("{}-{}",spot,top_right);
+                        unvalidated_moves.push(unvalidated_move);
+                    }
+                    if let Some(top_left_array) = top_left_opt {
+                        let top_left = std::str::from_utf8(&top_left_array).unwrap();
+                        let unvalidated_move = format!("{}-{}",spot,top_left);
+                        unvalidated_moves.push(unvalidated_move);
+                    }
+                } else if piece.get_player() == PLAYER::BLACK{
+                    let (bottom_opt, bottom_right_opt, bottom_left_opt) = (bounds.bottom, bounds.bottom_right_diag, bounds.bottom_left_diag);
+                    if let Some(bottom_array) = bottom_opt {
+                        let bottom = std::str::from_utf8(&bottom_array).unwrap();
+                        let unvalidated_move = format!("{}-{}",spot,bottom);
+                        unvalidated_moves.push(unvalidated_move);
+                        let next_bounds = chess_notation_utilities::get_bounds(bottom)?;
+                        if let Some(next_bottom_array) = next_bounds.bottom {
+                            let next_bottom = std::str::from_utf8(&next_bottom_array).unwrap();
+                            let unvalidated_move = format!("{}-{}",spot,next_bottom);
+                            unvalidated_moves.push(unvalidated_move);
+                        }
+                    }
+                    if let Some(bottom_right_array) = bottom_right_opt {
+                        let bottom_right = std::str::from_utf8(&bottom_right_array).unwrap();
+                        let unvalidated_move = format!("{}-{}",spot,bottom_right);
+                        unvalidated_moves.push(unvalidated_move);
+                    }
+                    if let Some(bottom_left_array) = bottom_left_opt {
+                        let bottom_left = std::str::from_utf8(&bottom_left_array).unwrap();
+                        let unvalidated_move = format!("{}-{}",spot,bottom_left);
+                        unvalidated_moves.push(unvalidated_move);
+                    }
+                }
+            }
+        } 
+        
         Ok((unvalidated_moves))
     }
 
@@ -206,7 +259,7 @@ impl fmt::Display for Rook {
 }
 
 impl GamePiece for Rook {
-    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors>  {
+    fn get_unvalidated_moves(&self, state: &GameState, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors>  {
         chess_notation_utilities::get_unvalidated_horiz_vert_moves(spot)
     }
     fn get_moved(&self) -> bool {
@@ -258,7 +311,7 @@ impl fmt::Display for Knight {
 }
 
 impl GamePiece for Knight {
-    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
+    fn get_unvalidated_moves(&self, state: &GameState, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
         let mut unvalidated_moves = Vec::new();
         Ok((unvalidated_moves))
     }
@@ -308,7 +361,7 @@ impl fmt::Display for Bishop {
 }
 
 impl GamePiece for Bishop {
-    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
+    fn get_unvalidated_moves(&self, state: &GameState, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
         chess_notation_utilities::get_unvalidated_diag_moves(spot)
     }
     fn get_moved(&self) -> bool {
@@ -357,8 +410,9 @@ impl fmt::Display for Queen {
 }
 
 impl GamePiece for Queen {
-    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
-        let mut unvalidated_moves = Vec::new();
+    fn get_unvalidated_moves(&self, state: &GameState, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
+        let mut unvalidated_moves = chess_notation_utilities::get_unvalidated_diag_moves(spot)?;
+        unvalidated_moves.append(&mut chess_notation_utilities::get_unvalidated_horiz_vert_moves(spot)?);
         Ok((unvalidated_moves))
     }
     fn get_moved(&self) -> bool {
@@ -413,7 +467,7 @@ impl fmt::Display for King {
 }
 
 impl GamePiece for King {
-    fn get_unvalidated_moves(&self, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
+    fn get_unvalidated_moves(&self, state: &GameState, spot: &str)-> Result<Vec<String>, chess_errors::ChessErrors> {
         let mut unvalidated_moves = Vec::new();
         Ok((unvalidated_moves))
     }
@@ -616,8 +670,8 @@ impl GameState {
         for (index, piece_opt) in self.state.iter().enumerate(){
             if  let Some(piece) = piece_opt {
                 let spot = chess_notation_utilities::index_to_spot(index);
-                let moves = piece.get_unvalidated_moves(&spot);
-                //println!("spot: {:?} moves: {:?}",spot, moves);
+                let moves = piece.get_unvalidated_moves(self, &spot);
+                println!("spot: {:?} moves: {:?}",spot, moves);
             }
             
             
