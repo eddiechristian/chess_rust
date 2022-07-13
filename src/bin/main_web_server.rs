@@ -29,6 +29,7 @@ pub struct ValidMovesResponse {
 async fn valid_moves(req: Json<ValidMovesRequest>) -> impl Responder {
     let mut moves_map = HashMap::new();
     moves_map.insert("a2".to_string(), vec!["a3".to_string()]);
+    moves_map.insert("b2".to_string(), vec![ "b3".to_string(), "b4".to_string()]);
     moves_map.entry("a2".to_string()).or_insert_with(|| {Vec::new()}).push("a4".to_string());
     let mut resp = ValidMovesResponse {
         moves: moves_map

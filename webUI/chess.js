@@ -56,16 +56,15 @@ for (let i = 0; i < rows; i++) {
                   x: j * width  + 15 , 
                   y: i * height + 15,
                   href: piece_href, 
-                  height: 50, 
-                  width: 50,
+                  height: 45, 
+                  width: 45,
                   class: "draggable",
                 }
         });
-        piece.addEventListener('mousedown', startDrag);
-        piece.addEventListener('mousemove', drag);
-        piece.addEventListener('mouseup', endDrag);
-        piece.addEventListener('mouseleave', endDrag);
-        piece.addEventListener('mouseover', mouseOver);
+        newRect.addEventListener('mousedown', startDrag);
+        newRect.addEventListener('mousemove', drag);
+        newRect.addEventListener('mouseup', endDrag);
+        newRect.addEventListener('mouseleave', endDrag);
         newRect.addEventListener('mouseover', mouseOver);
 
         svg.appendChild(newRect);
@@ -73,6 +72,10 @@ for (let i = 0; i < rows; i++) {
         svg.appendChild(green_circle);
         
       } else {
+        newRect.addEventListener('mousedown', startDrag);
+        newRect.addEventListener('mousemove', drag);
+        newRect.addEventListener('mouseup', endDrag);
+        newRect.addEventListener('mouseleave', endDrag);
         newRect.addEventListener('mouseover', mouseOver);
         svg.appendChild(newRect);
         svg.appendChild(green_circle);
@@ -178,6 +181,7 @@ function mouseOver(evt) {
   if (evt.target.id in values_map["moves"]) {
     
     let squares_to_make_visible = values_map["moves"][evt.target.id];
+    console.log(squares_to_make_visible)
     squares_to_make_visible.forEach(show_green_circles);
   }
 }
