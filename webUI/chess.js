@@ -61,8 +61,8 @@ for (let i = 0; i < rows; i++) {
                   class: "draggable",
                 }
         });
-        newRect.addEventListener('mousedown', startDrag);
-        newRect.addEventListener('mousemove', drag);
+        //newRect.addEventListener('mousedown', startDrag);
+        //newRect.addEventListener('mousemove', drag);
         newRect.addEventListener('mouseup', endDrag);
         newRect.addEventListener('mouseleave', endDrag);
         newRect.addEventListener('mouseover', mouseOver);
@@ -72,8 +72,8 @@ for (let i = 0; i < rows; i++) {
         svg.appendChild(green_circle);
         
       } else {
-        newRect.addEventListener('mousedown', startDrag);
-        newRect.addEventListener('mousemove', drag);
+        //newRect.addEventListener('mousedown', startDrag);
+        // newRect.addEventListener('mousemove', drag);
         newRect.addEventListener('mouseup', endDrag);
         newRect.addEventListener('mouseleave', endDrag);
         newRect.addEventListener('mouseover', mouseOver);
@@ -106,7 +106,7 @@ for (let i = 0; i < rows; i++) {
             values_map = JSON.parse(xhr.responseText);
         }
     };
-    var data = JSON.stringify({"message": "hey@mail.com"});
+    var data = JSON.stringify({"message": ""});
     xhr.send(data);
    }
 
@@ -181,7 +181,6 @@ function mouseOver(evt) {
   if (evt.target.id in values_map["moves"]) {
     
     let squares_to_make_visible = values_map["moves"][evt.target.id];
-    console.log(squares_to_make_visible)
     squares_to_make_visible.forEach(show_green_circles);
   }
 }
