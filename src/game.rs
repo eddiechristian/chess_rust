@@ -1,13 +1,16 @@
-mod chess_errors;
-mod chess_notation_utilities;
-mod visual;
+
+
+use crate::chess_errors;
+use crate::chess_notation_utilities;
+use crate::visual;
 
 use std::io::{stdin,stdout,Write};
-
+use std::{env, io};
 use visual::{GameState, PLAYER};
 
+
 #[derive(Debug)]
-enum Direction {
+pub enum Direction {
     Up,
     Down,
     Left,
@@ -20,9 +23,9 @@ enum Direction {
 
 
 
-struct Game {
-    state: GameState,
-    turn_history: Vec<String>,
+pub struct Game {
+    pub state: GameState,
+    pub turn_history: Vec<String>,
 }
 impl Default for Game {
     fn default() -> Self {
@@ -33,7 +36,7 @@ impl Default for Game {
     }
 }
 impl Game {
-    fn game_from_turn_history(turn_history: &[&str]) -> Self {
+    pub fn game_from_turn_history(turn_history: &[&str]) -> Self {
         let mut chess_game = Game {
             state:GameState::default(),
             turn_history: Vec::new(),
@@ -52,7 +55,7 @@ impl Game {
         }
         chess_game
     }
-    fn check_pieces_between(&self, from_spot: &str, to_spot: &str, dir: Direction)-> Result<(), chess_errors::ChessErrors>{
+    pub fn check_pieces_between(&self, from_spot: &str, to_spot: &str, dir: Direction)-> Result<(), chess_errors::ChessErrors>{
         let mut pos:String = to_spot.to_string();
         loop{
             if let Ok(bounds) = chess_notation_utilities::get_bounds(&pos){
@@ -121,7 +124,7 @@ impl Game {
         validated_moves
     }
 
-    fn is_move_valid(&self, from_spot: &str, to_spot: &str, whos_turn: visual::PLAYER, promotion_opt: Option<&str>)->Result<(visual::MoveType), chess_errors::ChessErrors> {
+    pub fn is_move_valid(&self, from_spot: &str, to_spot: &str, whos_turn: visual::PLAYER, promotion_opt: Option<&str>)->Result<(visual::MoveType), chess_errors::ChessErrors> {
         // first determine if piece at from is correct player.
         if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
             if let Some(piece) = self.state.get_piece_at(index) {
@@ -251,7 +254,7 @@ impl Game {
         Ok(visual::MoveType::Regular)
     }
 
-    fn check_en_passant (&mut self ,from_spot: &str, to_spot: &str, whos_turn: visual::PLAYER)->Result<(), chess_errors::ChessErrors> {
+    pub fn check_en_passant (&mut self ,from_spot: &str, to_spot: &str, whos_turn: visual::PLAYER)->Result<(), chess_errors::ChessErrors> {
         //in this function you see if last move is cause for enpassant then add moves to vec
         let mut vec_en_passant_moves = Vec::new();
         if let Ok(index) = chess_notation_utilities::notation_to_index(&from_spot) {
@@ -346,7 +349,7 @@ impl Game {
         Ok(())
     }
 
-    fn move_piece (&mut self ,chess_move: &str, whos_turn: visual::PLAYER)->Result<(), chess_errors::ChessErrors> {
+    pub fn move_piece (&mut self ,chess_move: &str, whos_turn: visual::PLAYER)->Result<(), chess_errors::ChessErrors> {
         let the_move = chess_move.to_lowercase();
         if let Some(index_of_dash) = the_move.find("-") {
             let from_spot = &the_move[0..index_of_dash];
@@ -372,88 +375,55 @@ impl Game {
         Ok(())
     }
 }
-fn main() {
-     let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6",
-         "b6-b7","f5-f4","a1-a7","g7-g6","d2-d4","h7-h5","d4-d5","h5-h4", "b2-b4","c6-a5", "b4-b5","c7-c5"]);  
-    //let mut chess_game = Game::default();   
-    chess_game.get_validated_moves(chess_game.state.player_turn);
-    let mut game_over = false;
-    while game_over == false {
-        let mut move_notation=String::new();
-        let prompt = {
-            match  chess_game.state.player_turn{
-                visual::PLAYER::WHITE => format!("White's turn:(e.g a2-b2,a7-a8pr or quit)").to_string(),
-                visual::PLAYER::BLACK => format!("Blacks's turn:(e.g a7-a6,a2-a1pq or quit)").to_string(),
-            }
-        };
-        println!("{}", chess_game.state);
-        println!("{}", prompt);
-        let _=stdout().flush();
-        stdin().read_line(&mut move_notation).expect("Did not enter a correct move");
-        if let Some('\n')=move_notation.chars().next_back() {
-            move_notation.pop();
-        }
-        if let Some('\r')=move_notation.chars().next_back() {
-            move_notation.pop();
-        }
-        if move_notation == "quit" {
-            break
-        }
-        if let Err(e) =chess_game.move_piece(&move_notation, chess_game.state.player_turn){
-            println!("{}",e);
-        }else {
-            chess_game.turn_history.push(move_notation.to_string());
-            chess_game.state.player_turn = match chess_game.state.player_turn {
-                visual::PLAYER::WHITE => visual::PLAYER::BLACK,
-                visual::PLAYER::BLACK => visual::PLAYER::WHITE,
-            };
-        }
-    }
+
+
+
+
     
 
    
-}
+// }
 
-#[cfg(test)]
-mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
-    use super::*;
+// #[cfg(test)]
+// mod tests {
+//     // Note this useful idiom: importing names from outer (for mod tests) scope.
+//     use super::*;
 
-    #[test]
-    fn test_promotion() {
-        //pawns reaching 8th rank can be promoted
-        let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6","b6-b7","f5-f4","a1-a7","g7-g6"]);
-        let good_move= chess_game.move_piece("b7-b8", chess_game.state.player_turn);
-        assert!(good_move.is_ok());
-        let bad_move= chess_game.move_piece("g7-g5pq", chess_game.state.player_turn);
-        assert!(bad_move.is_err());
-        let bad_move= chess_game.move_piece("a7-a8pq", chess_game.state.player_turn);
-        assert!(bad_move.is_err());
-    }
-    #[test]
-    fn test_enpassant1() {
-        //pawns reaching 8th rank can be promoted
-        let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6",
-        "b6-b7","f5-f4","a1-a7","g7-g6","d2-d4","h7-h5","d4-d5","h5-h4", "b2-b4","c6-a5", "b4-b5","c7-c5"]);
-        let good_move1= chess_game.move_piece("b5-c6", chess_game.state.player_turn);
-        assert!(good_move1.is_ok());
-        chess_game.state.player_turn = match chess_game.state.player_turn {
-            visual::PLAYER::WHITE => visual::PLAYER::BLACK,
-            visual::PLAYER::BLACK => visual::PLAYER::WHITE,
-        };
-        chess_game.move_piece("h8-h7", chess_game.state.player_turn);
-        chess_game.state.player_turn = match chess_game.state.player_turn {
-            visual::PLAYER::WHITE => visual::PLAYER::BLACK,
-            visual::PLAYER::BLACK => visual::PLAYER::WHITE,
-        };
-        chess_game.move_piece("g2-g4", chess_game.state.player_turn);
-        chess_game.state.player_turn = match chess_game.state.player_turn {
-            visual::PLAYER::WHITE => visual::PLAYER::BLACK,
-            visual::PLAYER::BLACK => visual::PLAYER::WHITE,
-        };
-        let good_move2= chess_game.move_piece("f4-g3", chess_game.state.player_turn);
-        assert!(good_move2.is_ok());
-    } 
+//     #[test]
+//     fn test_promotion() {
+//         //pawns reaching 8th rank can be promoted
+//         let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6","b6-b7","f5-f4","a1-a7","g7-g6"]);
+//         let good_move= chess_game.move_piece("b7-b8", chess_game.state.player_turn);
+//         assert!(good_move.is_ok());
+//         let bad_move= chess_game.move_piece("g7-g5pq", chess_game.state.player_turn);
+//         assert!(bad_move.is_err());
+//         let bad_move= chess_game.move_piece("a7-a8pq", chess_game.state.player_turn);
+//         assert!(bad_move.is_err());
+//     }
+//     #[test]
+//     fn test_enpassant1() {
+//         //pawns reaching 8th rank can be promoted
+//         let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6",
+//         "b6-b7","f5-f4","a1-a7","g7-g6","d2-d4","h7-h5","d4-d5","h5-h4", "b2-b4","c6-a5", "b4-b5","c7-c5"]);
+//         let good_move1= chess_game.move_piece("b5-c6", chess_game.state.player_turn);
+//         assert!(good_move1.is_ok());
+//         chess_game.state.player_turn = match chess_game.state.player_turn {
+//             visual::PLAYER::WHITE => visual::PLAYER::BLACK,
+//             visual::PLAYER::BLACK => visual::PLAYER::WHITE,
+//         };
+//         chess_game.move_piece("h8-h7", chess_game.state.player_turn);
+//         chess_game.state.player_turn = match chess_game.state.player_turn {
+//             visual::PLAYER::WHITE => visual::PLAYER::BLACK,
+//             visual::PLAYER::BLACK => visual::PLAYER::WHITE,
+//         };
+//         chess_game.move_piece("g2-g4", chess_game.state.player_turn);
+//         chess_game.state.player_turn = match chess_game.state.player_turn {
+//             visual::PLAYER::WHITE => visual::PLAYER::BLACK,
+//             visual::PLAYER::BLACK => visual::PLAYER::WHITE,
+//         };
+//         let good_move2= chess_game.move_piece("f4-g3", chess_game.state.player_turn);
+//         assert!(good_move2.is_ok());
+//     } 
     
 
     // #[test]
@@ -467,4 +437,4 @@ mod tests {
     //     let good_move= chess_game.move_piece("h4-g3", chess_game.state.player_turn);
     //     assert!(good_move.is_ok());
     // } 
-}
+// }
