@@ -69,26 +69,27 @@ for (let i = 0; i < rows; i++) {
   getValidMoves();
 
  
-  async function getValidMoves() {
-    fetch("http://localhost:9090/chess")
-  .then(r =>  r.json().then(data => ({status: r.status, body: data})))
-  .then(obj => console.log(obj));
+  // async function getValidMoves() {
+  //   fetch("http://localhost:9090/chess")
+  // .then(r =>  r.json().then(data => ({status: r.status, body: data})))
+  // .then(obj => console.log(obj));
+  //  }
+
+
+   async function getValidMoves() {
+    var xhr = new XMLHttpRequest();
+    var url = "http://localhost:9090/valid_moves";
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            var json = JSON.parse(xhr.responseText);
+            console.log(json);
+        }
+    };
+    var data = JSON.stringify({"message": "hey@mail.com"});
+    xhr.send(data);
    }
-
-
-//  async function getValidMoves() {
-//     const response = await fetch("https://jsonplaceholder.typicode.com/posts/1", {
-//       method: 'GET',
-//       headers: {
-//         'Accept': 'application/json',
-//       },
-//       mode: 'no-cors',
-//       });
-      
-//       const string = await response.text();
-//       const json = string === "" ? {} : JSON.parse(string);
-//       return json;
-//  }
 
   function getSquareId(col_num, row_num) {
     col = '';
