@@ -66,6 +66,29 @@ for (let i = 0; i < rows; i++) {
       }
     }
   }
+  getValidMoves();
+
+ 
+  async function getValidMoves() {
+    fetch("http://localhost:9090/chess")
+  .then(r =>  r.json().then(data => ({status: r.status, body: data})))
+  .then(obj => console.log(obj));
+   }
+
+
+//  async function getValidMoves() {
+//     const response = await fetch("https://jsonplaceholder.typicode.com/posts/1", {
+//       method: 'GET',
+//       headers: {
+//         'Accept': 'application/json',
+//       },
+//       mode: 'no-cors',
+//       });
+      
+//       const string = await response.text();
+//       const json = string === "" ? {} : JSON.parse(string);
+//       return json;
+//  }
 
   function getSquareId(col_num, row_num) {
     col = '';

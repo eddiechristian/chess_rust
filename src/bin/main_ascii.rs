@@ -7,6 +7,7 @@ use chess::game::{Game};
 fn main() {
     //https://hub.qovery.com/guides/tutorial/create-a-blazingly-fast-api-in-rust-part-1/
     //https://github.com/evoxmusic/twitter-clone-rust/blob/master/Cargo.toml
+//https://www.petercollingridge.co.uk/tutorials/svg/interactive/dragging/
 
      let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6",
          "b6-b7","f5-f4","a1-a7","g7-g6","d2-d4","h7-h5","d4-d5","h5-h4", "b2-b4","c6-a5", "b4-b5","c7-c5"]);  
