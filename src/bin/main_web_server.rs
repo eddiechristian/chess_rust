@@ -1,6 +1,8 @@
 // #[macro_use]
 // extern crate serde;
 
+use std::collections::HashMap;
+
 use actix_cors::Cors;
 use actix_web::web::{Data, Json, Path};
 use actix_web::{get, post, App, HttpResponse, HttpServer, Responder};
@@ -18,9 +20,20 @@ pub struct ValidMovesRequest {
     pub message: Option<String>,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ValidMovesResponse {
+    pub moves: HashMap<String,Vec<String>>,
+}
+
 #[post("/valid_moves")]
 async fn valid_moves(req: Json<ValidMovesRequest>) -> impl Responder {
-    HttpResponse::Ok().json(req)
+    let mut moves_map = HashMap::new();
+    moves_map.insert("a2".to_string(), vec!["a3".to_string()]);
+    moves_map.entry("a2".to_string()).or_insert_with(|| {Vec::new()}).push("a4".to_string());
+    let mut resp = ValidMovesResponse {
+        moves: moves_map
+    };
+    HttpResponse::Ok().json(resp)
 }
 
 

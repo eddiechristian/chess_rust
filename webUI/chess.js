@@ -3,6 +3,7 @@ console.clear();
 const svg = document.querySelector("svg");
 const svgns = "http://www.w3.org/2000/svg";
 var selectedElement = false;
+var values_map = {};
 
 let columns = 8;
 let rows = 8;
@@ -27,6 +28,7 @@ for (let i = 0; i < rows; i++) {
       square_id = getSquareId(j,i);
       counter++;
       let newRect = document.createElementNS(svgns, "rect");
+      let green_circle = document.createElementNS(svgns, "circle");
       gsap.set(newRect, {
         attr: {
           x: j * width,
@@ -36,6 +38,15 @@ for (let i = 0; i < rows; i++) {
           fill: colorArray[(counter-1) % colorArray.length],
           id: square_id,
         }
+      });
+      gsap.set(green_circle, {
+        attr: {
+          cx: j * width + 40,
+          cy: i * height + 40,
+          r: 9,
+          id:  "cir" + square_id,
+          class: "valid_moves"
+        },
       });
       if (starterPosition[i][j] != '.'){
         piece = document.createElementNS(svgns, "image");
@@ -59,15 +70,21 @@ for (let i = 0; i < rows; i++) {
 
         svg.appendChild(newRect);
         svg.appendChild(piece);
+        svg.appendChild(green_circle);
         
       } else {
         newRect.addEventListener('mouseover', mouseOver);
         svg.appendChild(newRect);
+        svg.appendChild(green_circle);
       }
     }
   }
-  getValidMoves();
-
+    
+    let green_cicle = document.createElementNS(svgns, "circle");
+   
+  
+    
+  getValidMoves(); //only call when turn changes
  
   // async function getValidMoves() {
   //   fetch("http://localhost:9090/chess")
@@ -83,8 +100,7 @@ for (let i = 0; i < rows; i++) {
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onreadystatechange = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
-            var json = JSON.parse(xhr.responseText);
-            console.log(json);
+            values_map = JSON.parse(xhr.responseText);
         }
     };
     var data = JSON.stringify({"message": "hey@mail.com"});
@@ -133,74 +149,35 @@ for (let i = 0; i < rows; i++) {
         case 'p': return 'piece_images/white_pawn.png';
     }
 }
+
 function startDrag(evt) {
-    if (evt.target.classList.contains('draggable')) {
-        selectedElement = evt.target;
-    }
+ 
 }
 function drag(evt) {
-
+ 
 }
+
 function endDrag(evt) {
-    
+  elements = document.getElementsByClassName("valid_moves");
+  for (var i = 0; i < elements.length; i++) {
+    elements[i].style.display = 'none';
+  }
+}
+
+function show_green_circles(square) {
+  let e = document.getElementById("cir" + square);
+  e.style.display = 'block';
+}
+
+
+function hide_green_circles(square) {
+  let e = document.getElementById("cir" + square);
+  e.style.display = 'none';
 }
 function mouseOver(evt) {
-    console.log(evt.target.id)
+  if (evt.target.id in values_map["moves"]) {
+    
+    let squares_to_make_visible = values_map["moves"][evt.target.id];
+    squares_to_make_visible.forEach(show_green_circles);
+  }
 }
-
-// let black_rook1 = document.createElementNS(svgns, "image");
-// gsap.set(black_rook1, {
-//     attr: { x: 150, y: 150,href: "piece_images/black_rook.png", height:"50", width:"50"}
-//     });
-//     svg.appendChild(black_rook1);
-
-//   let newLine = document.createElementNS(svgns, "line");
-//   svg.appendChild(newLine);
-//   gsap.set(newLine, {
-//     attr: { x1: 0, x2: 100, y1: 100, y2: 100  }
-//   });
-
-//   let newRect = document.createElementNS(svgns, "rect");
-//   // set attributes of new rectangle
-//   gsap.set(newRect, {
-//     attr: { x: 150, y: 150, width: 100, height: 100, fill: "#5cceee" }
-//   });
-  
-//   let newCirc = document.createElementNS(svgns, "circle");
-//   gsap.set(newCirc, {
-//     attr: {
-//       cy: 10,
-//       cx: 20,
-//       r: 10,
-//       fill: "red",
-//       id: "ed",
-//       player: "red"
-//     },
-//    });
-//    svg.appendChild(newCirc);
-//    document.getElementById("ed").setAttribute("player","white");
-//   // append the new rectangle to the svg
-
-//   newRect.addEventListener("mouseover", create_it);
-//   newRect.addEventListener("mouseleave", remove_it);
-//   svg.appendChild(newRect);
-
-//   function remove_it() {
-//     let circle = document.getElementById("ed");
-//     console.log(circle.getAttribute("player"))
-//     circle.parentNode.removeChild(circle);
-//   }
-
-//   function create_it() {
-//     let newCirc = document.createElementNS(svgns, "circle");
-//   gsap.set(newCirc, {
-//     attr: {
-//       cy: 100,
-//       cx: 20,
-//       r: 10,
-//       fill: "red",
-//       id: "eddie"
-//     },
-//    });
-//    svg.appendChild(newCirc);
-//   }

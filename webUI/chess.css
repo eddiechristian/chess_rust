@@ -18,6 +18,13 @@ body {
     stroke: red;
   }
   
+  .valid_moves {
+    stroke-width: 5;
+    stroke: rgb(0, 255, 170);
+    fill:rgb(0, 255, 170);
+    display: none;
+  }
+
   svg text {
     fill: red;
     font-size: 20px;
@@ -28,3 +35,4 @@ body {
   .draggable {
     cursor: move;
   }
+
