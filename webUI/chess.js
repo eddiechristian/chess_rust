@@ -3,6 +3,7 @@ console.clear();
 const svg = document.querySelector("svg");
 const svgns = "http://www.w3.org/2000/svg";
 var selectedElement = false;
+var offset;
 var values_map = {};
 
 let columns = 8;
@@ -23,6 +24,8 @@ starterPosition = [['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
 ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
 ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']];
 
+start_player = "white";
+
 for (let i = 0; i < rows; i++) {
     for (let j = 0; j < columns; j++) {
       square_id = getSquareId(j,i);
@@ -37,6 +40,7 @@ for (let i = 0; i < rows; i++) {
           height: height,
           fill: colorArray[(counter-1) % colorArray.length],
           id: square_id,
+          class: "static",
         }
       });
       gsap.set(green_circle, {
@@ -51,6 +55,12 @@ for (let i = 0; i < rows; i++) {
       if (starterPosition[i][j] != '.'){
         piece = document.createElementNS(svgns, "image");
         piece_href = getPieceImageSource(starterPosition[i][j]);
+        if (piece_href.includes(start_player) ){
+          piece_class= "draggable";
+        }else{
+          piece_class= "static";
+        }
+        
         gsap.set(piece, {
               attr: { 
                   x: j * width  + 15 , 
@@ -58,13 +68,13 @@ for (let i = 0; i < rows; i++) {
                   href: piece_href, 
                   height: 45, 
                   width: 45,
-                  class: "draggable",
+                  class: piece_class,
                 }
         });
-        //newRect.addEventListener('mousedown', startDrag);
-        //newRect.addEventListener('mousemove', drag);
-        newRect.addEventListener('mouseup', endDrag);
-        newRect.addEventListener('mouseleave', endDrag);
+        piece.addEventListener('mousedown', startDrag);
+        piece.addEventListener('mousemove', drag);
+        piece.addEventListener('mouseup', endDrag);
+        newRect.addEventListener('mouseleave', mouseLeave);
         newRect.addEventListener('mouseover', mouseOver);
 
         svg.appendChild(newRect);
@@ -72,10 +82,10 @@ for (let i = 0; i < rows; i++) {
         svg.appendChild(green_circle);
         
       } else {
-        //newRect.addEventListener('mousedown', startDrag);
-        // newRect.addEventListener('mousemove', drag);
-        newRect.addEventListener('mouseup', endDrag);
-        newRect.addEventListener('mouseleave', endDrag);
+        piece.addEventListener('mousedown', startDrag);
+        piece.addEventListener('mousemove', drag);
+        piece.addEventListener('mouseup', endDrag);
+        newRect.addEventListener('mouseleave', mouseLeave);
         newRect.addEventListener('mouseover', mouseOver);
         svg.appendChild(newRect);
         svg.appendChild(green_circle);
@@ -153,14 +163,44 @@ for (let i = 0; i < rows; i++) {
     }
 }
 
+function getMousePosition(evt) {
+  var CTM = svg.getScreenCTM();
+  return {
+    x: (evt.clientX - CTM.e) / CTM.a,
+    y: (evt.clientY - CTM.f) / CTM.d
+  };
+}
+
 function startDrag(evt) {
- 
+  if (evt.target.classList.contains('draggable')) {
+    selectedElement = evt.target;
+    offset = getMousePosition(evt);
+    offset.x -= parseFloat(selectedElement.getAttributeNS(null, "x"));
+    offset.y -= parseFloat(selectedElement.getAttributeNS(null, "y"));
+  }
 }
 function drag(evt) {
- 
+  if (selectedElement) {
+    evt.preventDefault();
+    var coord = getMousePosition(evt);
+    selectedElement.setAttributeNS(null, "x", coord.x - offset.x);
+    selectedElement.setAttributeNS(null, "y", coord.y -offset.y);
+  }
 }
 
 function endDrag(evt) {
+  if (selectedElement) {
+    evt.preventDefault();
+    var coord = getMousePosition(evt);
+    x_adjusted = parseInt((coord.x / width)) * width + 15;
+    y_adjusted = parseInt((coord.y / height)) * height + 15 ;
+    selectedElement.setAttributeNS(null, "x", x_adjusted );
+    selectedElement.setAttributeNS(null, "y", y_adjusted);
+  }
+  selectedElement = null;
+}
+
+function mouseLeave(evt) {
   elements = document.getElementsByClassName("valid_moves");
   for (var i = 0; i < elements.length; i++) {
     elements[i].style.display = 'none';
