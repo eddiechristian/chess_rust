@@ -1,17 +1,20 @@
 use std::io::{stdin,stdout,Write};
 use std::{env, io};
-use chess::visual::{GameState, PLAYER};
+use chess::visual::{GameState, PLAYER,WebGame};
 use chess::game::{Game};
-
 
 fn main() {
     //https://hub.qovery.com/guides/tutorial/create-a-blazingly-fast-api-in-rust-part-1/
     //https://github.com/evoxmusic/twitter-clone-rust/blob/master/Cargo.toml
 //https://www.petercollingridge.co.uk/tutorials/svg/interactive/dragging/
 
-     let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6",
-         "b6-b7","f5-f4","a1-a7","g7-g6","d2-d4","h7-h5","d4-d5","h5-h4", "b2-b4","c6-a5", "b4-b5","c7-c5"]);  
-    //let mut chess_game = Game::default();   
+    //  let mut chess_game = Game::game_from_turn_history(&["a2-a4","b7-b5","a4-b5","f7-f5","b5-b6","b8-c6",
+    //      "b6-b7","f5-f4","a1-a7","g7-g6","d2-d4","h7-h5","d4-d5","h5-h4", "b2-b4","c6-a5", "b4-b5","c7-c5"]);  
+    let mut chess_game = Game::default();   
+    let d:WebGame=  (&chess_game.state).into();
+    
+    println!("webState: {:?}", d);
+
     chess_game.get_validated_moves(chess_game.state.player_turn);
     let mut game_over = false;
     while game_over == false {

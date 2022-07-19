@@ -15,90 +15,83 @@ let height =80;
 const colorArray = ["#774C3B","#C99468","#774C3B","#C99468","#774C3B","#C99468","#774C3B","#C99468",
                     "#C99468","#774C3B","#C99468","#774C3B","#C99468","#774C3B","#C99468","#774C3B"];
 
-starterPosition = [['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
-['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-['.', '.', '.', '.', '.', '.', '.', '.'],
-['.', '.', '.', '.', '.', '.', '.', '.'],
-['.', '.', '.', '.', '.', '.', '.', '.'],
-['.', '.', '.', '.', '.', '.', '.', '.'],
-['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']];
+var starterPosition;
 
-start_player = "white";
+getValidMoves(); //only call when turn changes
 
-for (let i = 0; i < rows; i++) {
-    for (let j = 0; j < columns; j++) {
-      square_id = getSquareId(j,i);
-      counter++;
-      let newRect = document.createElementNS(svgns, "rect");
-      let green_circle = document.createElementNS(svgns, "circle");
-      gsap.set(newRect, {
-        attr: {
-          x: j * width,
-          y: i * height,
-          width: width,
-          height: height,
-          fill: colorArray[(counter-1) % colorArray.length],
-          id: square_id,
-          class: "static",
-        }
-      });
-      gsap.set(green_circle, {
-        attr: {
-          cx: j * width + 40,
-          cy: i * height + 40,
-          r: 9,
-          id:  "cir" + square_id,
-          class: "valid_moves"
-        },
-      });
-      if (starterPosition[i][j] != '.'){
-        piece = document.createElementNS(svgns, "image");
-        piece_href = getPieceImageSource(starterPosition[i][j]);
-        if (piece_href.includes(start_player) ){
-          piece_class= "draggable";
-        }else{
-          piece_class= "static";
-        }
-        
-        gsap.set(piece, {
-              attr: { 
-                  x: j * width  + 15 , 
-                  y: i * height + 15,
-                  href: piece_href, 
-                  height: 45, 
-                  width: 45,
-                  class: piece_class,
-                }
+function start_game() {
+  console.log(starterPosition)
+  start_player = "white";
+  
+  for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < columns; j++) {
+        square_id = getSquareId(j,i);
+        counter++;
+        let newRect = document.createElementNS(svgns, "rect");
+        let green_circle = document.createElementNS(svgns, "circle");
+        gsap.set(newRect, {
+          attr: {
+            x: j * width,
+            y: i * height,
+            width: width,
+            height: height,
+            fill: colorArray[(counter-1) % colorArray.length],
+            id: square_id,
+            class: "static",
+          }
         });
-        piece.addEventListener('mousedown', startDrag);
-        piece.addEventListener('mousemove', drag);
-        piece.addEventListener('mouseup', endDrag);
-        newRect.addEventListener('mouseleave', mouseLeave);
-        newRect.addEventListener('mouseover', mouseOver);
-
-        svg.appendChild(newRect);
-        svg.appendChild(piece);
-        svg.appendChild(green_circle);
-        
-      } else {
-        piece.addEventListener('mousedown', startDrag);
-        piece.addEventListener('mousemove', drag);
-        piece.addEventListener('mouseup', endDrag);
-        newRect.addEventListener('mouseleave', mouseLeave);
-        newRect.addEventListener('mouseover', mouseOver);
-        svg.appendChild(newRect);
-        svg.appendChild(green_circle);
+        gsap.set(green_circle, {
+          attr: {
+            cx: j * width + 40,
+            cy: i * height + 40,
+            r: 9,
+            id:  "cir" + square_id,
+            class: "valid_moves"
+          },
+        });
+        if (starterPosition[i][j] != '.'){
+          piece = document.createElementNS(svgns, "image");
+          piece_href = getPieceImageSource(starterPosition[i][j]);
+          if (piece_href.includes(start_player) ){
+            piece_class= "draggable";
+          }else{
+            piece_class= "static";
+          }
+          
+          gsap.set(piece, {
+                attr: { 
+                    x: j * width  + 15 , 
+                    y: i * height + 15,
+                    href: piece_href, 
+                    height: 45, 
+                    width: 45,
+                    class: piece_class,
+                  }
+          });
+          piece.addEventListener('mousedown', startDrag);
+          piece.addEventListener('mousemove', drag);
+          piece.addEventListener('mouseup', endDrag);
+          newRect.addEventListener('mouseleave', mouseLeave);
+          newRect.addEventListener('mouseover', mouseOver);
+  
+          svg.appendChild(newRect);
+          svg.appendChild(piece);
+          svg.appendChild(green_circle);
+          
+        } else {
+          piece.addEventListener('mousedown', startDrag);
+          piece.addEventListener('mousemove', drag);
+          piece.addEventListener('mouseup', endDrag);
+          newRect.addEventListener('mouseleave', mouseLeave);
+          newRect.addEventListener('mouseover', mouseOver);
+          svg.appendChild(newRect);
+          svg.appendChild(green_circle);
+        }
       }
     }
-  }
+}
+
     
-    let green_cicle = document.createElementNS(svgns, "circle");
-   
-  
-    
-  getValidMoves(); //only call when turn changes
- 
   // async function getValidMoves() {
   //   fetch("http://localhost:9090/chess")
   // .then(r =>  r.json().then(data => ({status: r.status, body: data})))
@@ -113,7 +106,11 @@ for (let i = 0; i < rows; i++) {
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onreadystatechange = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
-            values_map = JSON.parse(xhr.responseText);
+            get_valid_move_resp = JSON.parse(xhr.responseText);
+            starterPosition = get_valid_move_resp.web_game.state;
+            values_map = get_valid_move_resp.moves;
+            console.log(starterPosition)
+            start_game()
         }
     };
     var data = JSON.stringify({"message": ""});
@@ -218,9 +215,9 @@ function hide_green_circles(square) {
   e.style.display = 'none';
 }
 function mouseOver(evt) {
-  if (evt.target.id in values_map["moves"]) {
+  if (evt.target.id in values_map) {
     
-    let squares_to_make_visible = values_map["moves"][evt.target.id];
+    let squares_to_make_visible = values_map[evt.target.id];
     squares_to_make_visible.forEach(show_green_circles);
   }
 }

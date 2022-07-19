@@ -6,6 +6,8 @@
 use std::{cell::RefCell, fmt};
 use std::rc::Rc;
 
+use serde::{Deserialize, Serialize};
+
 use crate::chess_notation_utilities;
 use crate::chess_errors;
 
@@ -632,10 +634,55 @@ impl GamePiece for King {
     }
 }
 
+fn get_piece_char_from_unicode(unicode: char) -> char {
+    match unicode{
+        WHITE_BISHOP   =>  'b',
+        WHITE_KING => 'k',
+        WHITE_KNIGHT=> 'n',
+        WHITE_ROOK=> 'r',
+        WHITE_QUEEN=> 'q',
+        WHITE_PAWN => 'p',
+        BLACK_BISHOP   =>  'b',
+        BLACK_KING => 'K',
+        BLACK_KNIGHT=> 'N',
+        BLACK_ROOK=> 'R',
+        BLACK_QUEEN=> 'Q',
+        BLACK_PAWN => 'P',
+        _ => '.',
+    }
+}
+
+#[derive(Debug, Default,Deserialize, Serialize)]
+pub struct WebGame {
+    state: [[char;8];8],
+}
+
 pub struct GameState {
     pub state: Vec<Option<Rc<dyn GamePiece>>>,
     pub player_turn: PLAYER,
     pub en_passant_enabled: Option<Vec<String>>,
+}
+impl std::convert::Into<WebGame> for &GameState {
+    fn into(self) -> WebGame {
+        let mut web_game = WebGame::default();
+        let mut ctr:usize =0;
+       
+        
+        for piece_opt in &self.state {
+            let mut row = ctr / 8;
+            let col = ctr % 8 ;
+            match piece_opt {
+                Some(piece) => {
+                    web_game.state[row][col] = get_piece_char_from_unicode(piece.get_unicode_val());
+                }
+                None =>  { 
+                    web_game.state[row][col] = '.';
+                }
+            }
+            ctr+=1;
+        }
+        web_game
+    }
 }
 
 impl fmt::Display for GameState {
