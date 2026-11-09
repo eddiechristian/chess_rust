@@ -12,19 +12,19 @@ use crate::chess_notation_utilities;
 use crate::chess_errors;
 
 pub const WHITE_PAWN: char = '\u{2659}';
-const WHITE_ROOK: char = '\u{2656}';
-const WHITE_KNIGHT: char = '\u{2658}';
-const WHITE_BISHOP: char = '\u{2657}';
+pub const WHITE_ROOK: char = '\u{2656}';
+pub const WHITE_KNIGHT: char = '\u{2658}';
+pub const WHITE_BISHOP: char = '\u{2657}';
 
 pub const BLACK_PAWN: char = '\u{265F}';
-const BLACK_ROOK: char = '\u{265C}';
-const BLACK_KNIGHT: char = '\u{265E}';
-const BLACK_BISHOP: char = '\u{265D}';
-const BLACK_QUEEN: char = '\u{265B}';
-const BLACK_KING: char = '\u{265A}';
+pub const BLACK_ROOK: char = '\u{265C}';
+pub const BLACK_KNIGHT: char = '\u{265E}';
+pub const BLACK_BISHOP: char = '\u{265D}';
+pub const BLACK_QUEEN: char = '\u{265B}';
+pub const BLACK_KING: char = '\u{265A}';
 
-const WHITE_QUEEN: char = '\u{2655}';
-const WHITE_KING: char = '\u{2654}';
+pub const WHITE_QUEEN: char = '\u{2655}';
+pub const WHITE_KING: char = '\u{2654}';
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum PLAYER {
@@ -38,6 +38,29 @@ pub enum MoveType {
     Castling,
     Regular,
     Promotion(char)
+}
+
+/// Board row (0 = rank 8) on which `player`'s pawns promote.
+pub fn promotion_row(player: PLAYER) -> usize {
+    match player {
+        PLAYER::WHITE => 0,
+        PLAYER::BLACK => 7,
+    }
+}
+
+/// The piece a pawn promotes to: "q" queen, "r" rook, "b" bishop, "n" knight; none means queen.
+pub fn promotion_glyph(player: PLAYER, promotion_opt: Option<&str>) -> Result<char, chess_errors::ChessErrors> {
+    let (queen, rook, bishop, knight) = match player {
+        PLAYER::WHITE => (WHITE_QUEEN, WHITE_ROOK, WHITE_BISHOP, WHITE_KNIGHT),
+        PLAYER::BLACK => (BLACK_QUEEN, BLACK_ROOK, BLACK_BISHOP, BLACK_KNIGHT),
+    };
+    match promotion_opt {
+        None | Some("q") => Ok(queen),
+        Some("r") => Ok(rook),
+        Some("b") => Ok(bishop),
+        Some("n") => Ok(knight),
+        Some(other) => Err(chess_errors::ChessErrors::InvalidPromotion(other.to_string())),
+    }
 }
 
 pub trait GamePiece : std::fmt::Debug {
@@ -174,59 +197,12 @@ impl GamePiece for Pawn {
             return Err(chess_errors::ChessErrors::InvalidMove(msg));
         }
         //check for promotion
-        if let Ok(row) =chess_notation_utilities::convert_row(to_spot){
-            if self.get_player() == PLAYER::BLACK {
-                if row == 7 {
-                    match promotion_opt {
-                        None => {
-                            return Ok((to_spot.to_string(),MoveType::Promotion(BLACK_QUEEN)))
-                        },
-                        Some(promotion) => {
-                            match promotion {
-                                "r" => {
-                                    return Ok((to_spot.to_string(),MoveType::Promotion(BLACK_ROOK)));
-                                },
-                                "b" => {
-                                    return Ok((to_spot.to_string(),MoveType::Promotion(BLACK_BISHOP)));
-                                },
-                                "k" => {
-                                    return Ok((to_spot.to_string(),MoveType::Promotion(BLACK_KNIGHT)));
-                                },
-                                _ => {
-                                    return Ok((to_spot.to_string(),MoveType::Promotion(BLACK_QUEEN)));
-                                },
-                            }
-                        }
-                    }
-                }
-            } else {
-                if row == 0 {
-                    match promotion_opt {
-                        None => {
-                            return Ok((to_spot.to_string(),MoveType::Promotion(WHITE_QUEEN)))
-                        },
-                        Some(promotion) => {
-                            match promotion {
-                                "r" => {
-                                    return Ok((to_spot.to_string(),MoveType::Promotion(WHITE_ROOK)));
-                                },
-                                "b" => {
-                                    return Ok((to_spot.to_string(),MoveType::Promotion(WHITE_BISHOP)));
-                                },
-                                "k" => {
-                                    return Ok((to_spot.to_string(),MoveType::Promotion(WHITE_KNIGHT)));
-                                },
-                                _ => {
-                                    return Ok((to_spot.to_string(),MoveType::Promotion(WHITE_QUEEN)));
-                                },
-                            }
-                            
-                        }
-                    }
-                }
-            }   
+        if let Ok(row) = chess_notation_utilities::convert_row(to_spot) {
+            if row == promotion_row(self.get_player()) {
+                return Ok((to_spot.to_string(), MoveType::Promotion(promotion_glyph(self.get_player(), promotion_opt)?)));
+            }
         }
-       
+
         Ok((to_spot.to_string(),MoveType::Regular))
     }
     fn  move_diagonal(&self, to_spot: &str, state: &GameState, delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
@@ -596,6 +572,18 @@ impl GamePiece for King {
             unvalidated_moves.push(unvalidated_move);
         }
 
+        // castling candidates (two squares sideways); game.rs validates them
+        if !self.get_moved() {
+            let index = chess_notation_utilities::notation_to_index(spot)?;
+            let col = index % 8;
+            if col + 2 < 8 {
+                unvalidated_moves.push(format!("{}-{}", spot, chess_notation_utilities::index_to_spot(index + 2)));
+            }
+            if col >= 2 {
+                unvalidated_moves.push(format!("{}-{}", spot, chess_notation_utilities::index_to_spot(index - 2)));
+            }
+        }
+
         Ok(unvalidated_moves)
     }
     fn get_moved(&self) -> bool {
@@ -614,40 +602,59 @@ impl GamePiece for King {
         let msg = format!("{}",to_spot);
         return Err(chess_errors::ChessErrors::InvalidMove(msg));
     }
-    fn  move_horizontal(&self, to_spot: &str, _state: &GameState, _delta_x: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
-        let msg = format!("{}",to_spot);
-        return Err(chess_errors::ChessErrors::InvalidMove(msg));
-    }
-    fn  move_vertical(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<(String,MoveType), chess_errors::ChessErrors>{
+    fn  move_horizontal(&self, to_spot: &str, _state: &GameState, delta_x: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
         if promotion.is_some() {
             let msg = format!("{}",to_spot);
             return Err(chess_errors::ChessErrors::InvalidPromotion(msg));
         }
-        Ok((to_spot.to_string(),MoveType::Regular))
+        // the king only moves one square sideways (castling is not handled here)
+        if delta_x.abs() != 1 {
+            let msg = format!("{}",to_spot);
+            return Err(chess_errors::ChessErrors::InvalidMove(msg));
+        }
+        Ok(to_spot.to_string())
     }
-    fn  move_diagonal(&self, to_spot: &str, _state: &GameState, _delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
+    fn  move_vertical(&self, to_spot: &str, _state: &GameState, delta_y: i8, promotion: Option<&str>) -> Result<(String,MoveType), chess_errors::ChessErrors>{
         if promotion.is_some() {
             let msg = format!("{}",to_spot);
             return Err(chess_errors::ChessErrors::InvalidPromotion(msg));
+        }
+        // the king only moves one square
+        if delta_y.abs() != 1 {
+            let msg = format!("{}",to_spot);
+            return Err(chess_errors::ChessErrors::InvalidMove(msg));
+        }
+        Ok((to_spot.to_string(),MoveType::Regular))
+    }
+    fn  move_diagonal(&self, to_spot: &str, _state: &GameState, delta_y: i8, promotion: Option<&str>) -> Result<String, chess_errors::ChessErrors>{
+        if promotion.is_some() {
+            let msg = format!("{}",to_spot);
+            return Err(chess_errors::ChessErrors::InvalidPromotion(msg));
+        }
+        // the king only moves one square
+        if delta_y.abs() != 1 {
+            let msg = format!("{}",to_spot);
+            return Err(chess_errors::ChessErrors::InvalidMove(msg));
         }
         Ok(to_spot.to_string())
     }
 }
 
-fn get_piece_char_from_unicode(unicode: char) -> char {
+/// FEN-style piece letter: uppercase for white, lowercase for black, '.' for anything else.
+pub fn get_piece_char_from_unicode(unicode: char) -> char {
     match unicode{
-        WHITE_BISHOP   =>  'b',
-        WHITE_KING => 'k',
-        WHITE_KNIGHT=> 'n',
-        WHITE_ROOK=> 'r',
-        WHITE_QUEEN=> 'q',
-        WHITE_PAWN => 'p',
+        WHITE_BISHOP   =>  'B',
+        WHITE_KING => 'K',
+        WHITE_KNIGHT=> 'N',
+        WHITE_ROOK=> 'R',
+        WHITE_QUEEN=> 'Q',
+        WHITE_PAWN => 'P',
         BLACK_BISHOP   =>  'b',
-        BLACK_KING => 'K',
-        BLACK_KNIGHT=> 'N',
-        BLACK_ROOK=> 'R',
-        BLACK_QUEEN=> 'Q',
-        BLACK_PAWN => 'P',
+        BLACK_KING => 'k',
+        BLACK_KNIGHT=> 'n',
+        BLACK_ROOK=> 'r',
+        BLACK_QUEEN=> 'q',
+        BLACK_PAWN => 'p',
         _ => '.',
     }
 }
@@ -933,6 +940,20 @@ impl GameState {
         if let MoveType::Enpassant(index) =  move_type{
             let _= std::mem::replace(&mut self.state[index], None);
             self.en_passant_enabled = None;
+        }
+        if let MoveType::Castling = move_type {
+            // the king moves two squares (below); the rook jumps to the square it crossed
+            let row_start = from - from % 8;
+            let (rook_from, rook_to) = if to > from {
+                (row_start + 7, from + 1)
+            } else {
+                (row_start, from - 1)
+            };
+            let rook = std::mem::replace(&mut self.state[rook_from], None);
+            if let Some(rook) = rook.as_ref() {
+                rook.toggle_moved();
+            }
+            self.state[rook_to] = rook;
         }
         if let MoveType::Promotion(piece_char) =  move_type{
             let new_piece = self.promotion_game_piece(piece_char);

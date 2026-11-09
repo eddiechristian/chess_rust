@@ -145,18 +145,18 @@ function start_game() {
 
   function getPieceImageSource(piece) {
     switch (piece) {
-        case 'R': return 'piece_images/black_rook.png';
-        case 'N': return 'piece_images/black_knight.png';
-        case 'B': return 'piece_images/black_bishop.png';
-        case 'Q': return 'piece_images/black_queen.png';
-        case 'K': return 'piece_images/black_king.png';
-        case 'P': return 'piece_images/black_pawn.png';
-        case 'r': return 'piece_images/white_rook.png';
-        case 'n': return 'piece_images/white_knight.png';
-        case 'b': return 'piece_images/white_bishop.png';
-        case 'q': return 'piece_images/white_queen.png';
-        case 'k': return 'piece_images/white_king.png';
-        case 'p': return 'piece_images/white_pawn.png';
+        case 'R': return 'piece_images/white_rook.png';
+        case 'N': return 'piece_images/white_knight.png';
+        case 'B': return 'piece_images/white_bishop.png';
+        case 'Q': return 'piece_images/white_queen.png';
+        case 'K': return 'piece_images/white_king.png';
+        case 'P': return 'piece_images/white_pawn.png';
+        case 'r': return 'piece_images/black_rook.png';
+        case 'n': return 'piece_images/black_knight.png';
+        case 'b': return 'piece_images/black_bishop.png';
+        case 'q': return 'piece_images/black_queen.png';
+        case 'k': return 'piece_images/black_king.png';
+        case 'p': return 'piece_images/black_pawn.png';
     }
 }
 

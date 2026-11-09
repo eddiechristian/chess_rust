@@ -572,3 +572,86 @@ pub fn convert_move_notation_to_xy(
     let to_point = Point{x: to_col,y: to_row};
     Ok((from_point, to_point))
 }
+
+/// A move written in long algebraic notation, e.g. `e2-e4`, `Ng1-f3`, `e4xd5`, `e7-e8=Q`.
+#[derive(Debug, PartialEq)]
+pub struct ParsedMove {
+    /// optional piece letter written before the from square (k, q, r, b, n), lowercase
+    pub piece: Option<char>,
+    pub from: String,
+    pub to: String,
+    /// promotion piece letter (q, r, b, n), lowercase
+    pub promotion: Option<char>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum MoveNotation {
+    Move(ParsedMove),
+    /// `O-O`
+    CastleKingside,
+    /// `O-O-O`
+    CastleQueenside,
+}
+
+/// Parses a move in long algebraic notation. Accepted forms (case-insensitive):
+/// - `e2-e4`, `e2e4`, capture `e4xd5`, optional piece letter `Ng1-f3`, `Bf1xb5`
+/// - promotion `e7-e8=Q` or `e7-e8Q` (q, r, b or n; defaults to queen if omitted)
+/// - castling `O-O` / `O-O-O` (zeros `0-0` also accepted)
+/// - trailing check/mate/annotation marks (`+`, `#`, `!`, `?`) are ignored
+pub fn parse_move(input: &str) -> Result<MoveNotation, chess_errors::ChessErrors> {
+    let invalid = || chess_errors::ChessErrors::InvalidNotation(input.to_string());
+    let text = input
+        .trim()
+        .trim_end_matches(|c| matches!(c, '+' | '#' | '!' | '?'))
+        .to_lowercase();
+    match text.replace('0', "o").as_str() {
+        "o-o" => return Ok(MoveNotation::CastleKingside),
+        "o-o-o" => return Ok(MoveNotation::CastleQueenside),
+        _ => {}
+    }
+
+    let chars: Vec<char> = text.chars().collect();
+    let is_file = |c: Option<&char>| matches!(c, Some('a'..='h'));
+    let is_rank = |c: Option<&char>| matches!(c, Some('1'..='8'));
+    let mut pos = 0;
+
+    // optional piece letter, only if a square follows it (so "b1-c3" is a square, "bf1-c4" a bishop)
+    let mut piece = None;
+    if matches!(chars.first(), Some('k' | 'q' | 'r' | 'b' | 'n'))
+        && is_file(chars.get(1))
+        && is_rank(chars.get(2))
+    {
+        piece = Some(chars[0]);
+        pos = 1;
+    }
+
+    let square = |pos: &mut usize| -> Result<String, chess_errors::ChessErrors> {
+        if is_file(chars.get(*pos)) && is_rank(chars.get(*pos + 1)) {
+            *pos += 2;
+            Ok(chars[*pos - 2..*pos].iter().collect())
+        } else {
+            Err(invalid())
+        }
+    };
+    let from = square(&mut pos)?;
+    if matches!(chars.get(pos), Some('-' | 'x')) {
+        pos += 1;
+    }
+    let to = square(&mut pos)?;
+
+    if chars.get(pos) == Some(&'=') {
+        pos += 1;
+    }
+    let promotion = match chars.get(pos) {
+        None => None,
+        Some(&c @ ('q' | 'r' | 'b' | 'n')) => {
+            pos += 1;
+            Some(c)
+        }
+        Some(_) => return Err(invalid()),
+    };
+    if pos != chars.len() {
+        return Err(invalid());
+    }
+    Ok(MoveNotation::Move(ParsedMove { piece, from, to, promotion }))
+}

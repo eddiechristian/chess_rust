@@ -1,4 +1,3 @@
-
 use std::fmt;
 
 use std::error::Error;
@@ -14,7 +13,9 @@ pub enum ChessErrors {
     InvalidMove(String),
     InvalidPromotion(String),
     PieceBetween(String),
-    Utf8Error
+    PieceIsPinned(String),
+    KingInCheck(String),
+    Utf8Error,
 }
 
 impl From<Utf8Error> for ChessErrors {
@@ -55,7 +56,21 @@ impl fmt::Display for ChessErrors {
                 write!(f, "piece cannot be promoted to {}", x)
             }
             ChessErrors::PieceBetween(x) => {
-                write!(f, "piece cannot move  because one of your pieces is at {}", x)
+                write!(
+                    f,
+                    "piece cannot move because a piece is in the way at {}",
+                    x
+                )
+            }
+            ChessErrors::PieceIsPinned(x) => {
+                write!(
+                    f,
+                    "piece cannot move  because it is pinned by piece at {}",
+                    x
+                )
+            }
+            ChessErrors::KingInCheck(x) => {
+                write!(f, "move would leave your king in check from piece at {}", x)
             }
             _ => {
                 write!(f, "ddddd")
@@ -63,4 +78,3 @@ impl fmt::Display for ChessErrors {
         }
     }
 }
-
