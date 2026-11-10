@@ -54,6 +54,19 @@ pub struct Move {
 }
 
 impl Move {
+    /// UCI notation used by chess engines and GUIs: `e2e4`, promotions as `e7e8q`.
+    pub fn to_uci(&self) -> String {
+        let mut text = format!(
+            "{}{}",
+            chess_notation_utilities::index_to_spot(self.from as usize),
+            chess_notation_utilities::index_to_spot(self.to as usize)
+        );
+        if let Some(kind) = self.promotion {
+            text.push(kind_letter(kind));
+        }
+        text
+    }
+
     /// Long algebraic notation accepted by `Game::move_piece`, e.g. `e2-e4` or `e7-e8=Q`.
     pub fn to_notation(&self) -> String {
         let mut text = format!(

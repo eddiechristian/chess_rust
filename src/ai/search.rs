@@ -14,6 +14,10 @@
 //! through an exchange (e.g. right after QxP, before the recapture) and badly misjudge
 //! the position: the "horizon effect".
 
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::Instant;
+
 use super::board::{Board, Color, Kind, Move};
 pub use super::eval::{evaluate, piece_value};
 
@@ -77,17 +81,45 @@ pub struct Search {
     pub order_moves: bool,
     /// play out captures at the end of the search before scoring (quiescence search)
     pub quiescence: bool,
+    /// abort the search when this time is reached
+    pub deadline: Option<Instant>,
+    /// abort the search when another thread sets this (the UCI "stop" command)
+    pub stop_signal: Option<Arc<AtomicBool>>,
+    /// set once the search has been aborted; its scores are then meaningless
+    pub stopped: bool,
 }
 
 impl Default for Search {
     fn default() -> Self {
-        Search { nodes: 0, order_moves: true, quiescence: true }
+        Search {
+            nodes: 0,
+            order_moves: true,
+            quiescence: true,
+            deadline: None,
+            stop_signal: None,
+            stopped: false,
+        }
     }
 }
+
+/// How often (in positions) the search looks at the clock and the stop signal.
+const STOP_CHECK_INTERVAL: u64 = 1024;
 
 impl Search {
     pub fn new() -> Self {
         Search::default()
+    }
+
+    /// True once the search should give up: the deadline passed or "stop" was sent.
+    /// Checking the clock every position would be slow, so it is only read every
+    /// STOP_CHECK_INTERVAL positions.
+    fn should_stop(&mut self) -> bool {
+        if !self.stopped && self.nodes % STOP_CHECK_INTERVAL == 0 {
+            let out_of_time = self.deadline.map_or(false, |d| Instant::now() >= d);
+            let told_to_stop = self.stop_signal.as_ref().map_or(false, |s| s.load(Ordering::Relaxed));
+            self.stopped = out_of_time || told_to_stop;
+        }
+        self.stopped
     }
 
     /// Plain minimax: looks `depth` moves ahead (counting both sides' moves) and returns
@@ -119,6 +151,9 @@ impl Search {
             return self.leaf(board, alpha, beta);
         }
         self.nodes += 1;
+        if self.should_stop() {
+            return 0; // aborted: the caller throws this result away
+        }
         let mut moves = board.legal_moves();
         if moves.is_empty() {
             return game_over_score(board, depth);
@@ -178,6 +213,9 @@ impl Search {
     /// only searched straight after a move that gave check.
     pub fn quiesce(&mut self, board: &Board, mut alpha: i32, mut beta: i32) -> i32 {
         self.nodes += 1;
+        if self.should_stop() {
+            return 0; // aborted: the caller throws this result away
+        }
         let mut moves = board.legal_moves();
         if moves.is_empty() {
             return game_over_score(board, 0);
@@ -245,18 +283,37 @@ pub fn best_move_minimax(board: &Board, depth: u32) -> Option<SearchResult> {
     best_move_with(board, depth, Search::new(), false)
 }
 
-/// Searches each root move. With `use_alphabeta`, the root also narrows the window as
-/// better moves are found, so later root moves can be cut off early.
+/// Searches the position with a fresh `Search` and returns the best move.
 pub fn best_move_with(
     board: &Board,
     depth: u32,
     mut search: Search,
     use_alphabeta: bool,
 ) -> Option<SearchResult> {
+    root_search(board, depth, &mut search, use_alphabeta, None)
+        .map(|(best, score)| SearchResult { best, score, nodes: search.nodes })
+}
+
+/// Searches each root move and returns the best with its score. With `use_alphabeta`,
+/// the root also narrows the window as better moves are found, so later root moves can
+/// be cut off early. `first`, if given, is searched before all other moves.
+/// If the search is aborted, `search.stopped` is set and the result must be ignored.
+fn root_search(
+    board: &Board,
+    depth: u32,
+    search: &mut Search,
+    use_alphabeta: bool,
+    first: Option<Move>,
+) -> Option<(Move, i32)> {
     search.nodes += 1; // the root position
     let mut moves = board.legal_moves();
     if use_alphabeta && search.order_moves {
         order_moves(board, &mut moves);
+    }
+    if let Some(first) = first {
+        if let Some(i) = moves.iter().position(|&mv| mv == first) {
+            moves[..=i].rotate_right(1); // move it to the front, keep the rest in order
+        }
     }
     let white = board.side_to_move == Color::White;
     let (mut alpha, mut beta) = (i32::MIN, i32::MAX);
@@ -270,6 +327,9 @@ pub fn best_move_with(
         } else {
             search.minimax(&next, child_depth)
         };
+        if search.stopped {
+            break;
+        }
         // strictly better only: a cut-off branch can return a score equal to the current
         // best without really being as good, so ties keep the earlier move
         let better = match best {
@@ -281,8 +341,63 @@ pub fn best_move_with(
             if white { alpha = score } else { beta = score }
         }
     }
+    best
+}
 
-    best.map(|(best, score)| SearchResult { best, score, nodes: search.nodes })
+/// Limits for `iterative_deepening`.
+#[derive(Clone, Default)]
+pub struct SearchLimits {
+    /// never search deeper than this
+    pub max_depth: u32,
+    /// don't start another depth after this time (the next depth would likely not finish)
+    pub soft_deadline: Option<Instant>,
+    /// abort the depth in progress at this time
+    pub hard_deadline: Option<Instant>,
+    /// abort when another thread sets this
+    pub stop_signal: Option<Arc<AtomicBool>>,
+}
+
+/// Iterative deepening: searches depth 1, then 2, 3, ... until a limit is reached, and
+/// returns the result of the deepest search that finished. This turns a fixed-depth
+/// search into one that respects a clock. Re-searching the shallow depths is cheap, and
+/// each depth searches the previous depth's best move first, which improves cutoffs.
+///
+/// `search` supplies the settings (move ordering, quiescence); its limits are replaced.
+/// `report` is called after each completed depth. Depth 1 always completes, so there is
+/// always a move unless the position has no legal moves (then None is returned).
+pub fn iterative_deepening(
+    board: &Board,
+    limits: &SearchLimits,
+    mut search: Search,
+    mut report: impl FnMut(u32, &SearchResult),
+) -> Option<SearchResult> {
+    let mut best: Option<SearchResult> = None;
+    for depth in 1..=limits.max_depth.max(1) {
+        if depth > 1 {
+            let past_soft = limits.soft_deadline.map_or(false, |d| Instant::now() >= d);
+            let told_to_stop =
+                limits.stop_signal.as_ref().map_or(false, |s| s.load(Ordering::Relaxed));
+            if past_soft || told_to_stop {
+                break;
+            }
+        }
+        // depth 1 runs without limits so there is always a move to play
+        search.deadline = if depth == 1 { None } else { limits.hard_deadline };
+        search.stop_signal = if depth == 1 { None } else { limits.stop_signal.clone() };
+
+        let found = root_search(board, depth, &mut search, true, best.map(|r| r.best));
+        if search.stopped {
+            break; // unfinished depth: keep the previous depth's answer
+        }
+        let Some((mv, score)) = found else { return None };
+        let result = SearchResult { best: mv, score, nodes: search.nodes };
+        report(depth, &result);
+        best = Some(result);
+        if score.abs() >= MATE_SCORE {
+            break; // a forced mate was found; searching deeper won't change the outcome
+        }
+    }
+    best
 }
 
 #[cfg(test)]
@@ -302,7 +417,7 @@ mod tests {
     }
 
     fn search(order_moves: bool, quiescence: bool) -> Search {
-        Search { nodes: 0, order_moves, quiescence }
+        Search { order_moves, quiescence, ..Search::default() }
     }
 
     fn best(fen: &str, depth: u32) -> (String, i32) {
@@ -417,6 +532,48 @@ mod tests {
         assert_eq!(Search::new().minimax(&b, 3), 0);
         assert_eq!(Search::new().alphabeta(&b, 3, i32::MIN, i32::MAX), 0);
         assert_eq!(Search::new().quiesce(&b, i32::MIN, i32::MAX), 0);
+    }
+
+    #[test]
+    fn iterative_deepening_reaches_max_depth() {
+        let limits = SearchLimits { max_depth: 4, ..SearchLimits::default() };
+        let mut depths = Vec::new();
+        let result = iterative_deepening(&Board::start(), &limits, Search::new(), |d, _| depths.push(d));
+        assert_eq!(depths, vec![1, 2, 3, 4]);
+        // same score as a plain depth-4 search
+        assert_eq!(result.unwrap().score, best_move(&Board::start(), 4).unwrap().score);
+    }
+
+    #[test]
+    fn iterative_deepening_respects_the_clock() {
+        let start = Instant::now();
+        let limits = SearchLimits {
+            max_depth: 64,
+            soft_deadline: Some(start + std::time::Duration::from_millis(100)),
+            hard_deadline: Some(start + std::time::Duration::from_millis(200)),
+            stop_signal: None,
+        };
+        let result = iterative_deepening(&board(KIWIPETE), &limits, Search::new(), |_, _| {});
+        assert!(result.is_some());
+        // allow some slack for slow test machines
+        assert!(start.elapsed() < std::time::Duration::from_millis(1000));
+    }
+
+    #[test]
+    fn iterative_deepening_obeys_stop_signal() {
+        let stop = Arc::new(AtomicBool::new(true)); // already stopped
+        let limits = SearchLimits { max_depth: 64, stop_signal: Some(stop), ..SearchLimits::default() };
+        let mut depths = Vec::new();
+        let result = iterative_deepening(&Board::start(), &limits, Search::new(), |d, _| depths.push(d));
+        assert!(result.is_some(), "depth 1 always completes");
+        assert_eq!(depths, vec![1]);
+    }
+
+    #[test]
+    fn iterative_deepening_stops_at_mate() {
+        let limits = SearchLimits { max_depth: 10, ..SearchLimits::default() };
+        let result = iterative_deepening(&board(MATE_IN_ONE_WHITE), &limits, Search::new(), |_, _| {});
+        assert_eq!(result.unwrap().best.to_notation(), "a1-a8");
     }
 
     #[test]
