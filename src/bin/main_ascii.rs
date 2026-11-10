@@ -1,7 +1,13 @@
+use chess::ai::board::Board;
+use chess::ai::search::{best_move, MATE_SCORE};
 use chess::game::{Game, GameStatus};
 use chess::visual::{GameState, WebGame, PLAYER};
 use std::io::{stdin, stdout, Write};
 use std::{env, io};
+
+/// How many moves ahead "suggest" looks when no depth is given. Each extra level is
+/// roughly 20-30x slower; depth 4+ is best run with `cargo run --release`.
+const DEFAULT_SUGGEST_DEPTH: u32 = 3;
 
 fn main() {
     //https://hub.qovery.com/guides/tutorial/create-a-blazingly-fast-api-in-rust-part-1/
@@ -20,8 +26,8 @@ fn main() {
         let mut move_notation = String::new();
         let prompt = {
             match chess_game.state.player_turn {
-                PLAYER::WHITE => "White's turn (e.g. e2-e4, Ng1-f3, e4xd5, e7-e8=Q, O-O, or quit)".to_string(),
-                PLAYER::BLACK => "Black's turn (e.g. e7-e5, Ng8-f6, d5xe4, e2-e1=N, O-O-O, or quit)".to_string(),
+                PLAYER::WHITE => "White's turn (e.g. e2-e4, Ng1-f3, e4xd5, e7-e8=Q, O-O, suggest, suggest 4, or quit)".to_string(),
+                PLAYER::BLACK => "Black's turn (e.g. e7-e5, Ng8-f6, d5xe4, e2-e1=N, O-O-O, suggest, suggest 4, or quit)".to_string(),
             }
         };
         println!("{}", chess_game.state);
@@ -38,6 +44,37 @@ fn main() {
         }
         if move_notation == "quit" {
             break;
+        }
+        // "suggest" (optionally with a depth, e.g. "suggest 4"): the AI picks the current
+        // player's move, which is then played like a typed move
+        let mut words = move_notation.split_whitespace();
+        if matches!(words.next().map(|w| w.to_lowercase()).as_deref(), Some("suggest" | "suggestion")) {
+            let depth = match words.next() {
+                None => DEFAULT_SUGGEST_DEPTH,
+                Some(text) => match text.parse::<u32>() {
+                    Ok(depth) if depth >= 1 => depth,
+                    _ => {
+                        println!("depth must be a whole number of 1 or more, e.g. suggest 4");
+                        continue;
+                    }
+                },
+            };
+            let board = Board::from(&chess_game.state);
+            match best_move(&board, depth) {
+                Some(result) => {
+                    move_notation = result.best.to_notation();
+                    println!(
+                        "AI plays {} ({}, {} positions searched)",
+                        move_notation,
+                        describe_score(result.score, depth),
+                        result.nodes
+                    );
+                }
+                None => {
+                    println!("no legal moves");
+                    continue;
+                }
+            }
         }
         if let Err(e) = chess_game.move_piece(&move_notation, chess_game.state.player_turn) {
             println!("{}", e);
@@ -67,5 +104,15 @@ fn main() {
                 GameStatus::InProgress => {}
             }
         }
+    }
+}
+
+/// Human-readable search score. Scores are from white's side: + favours white.
+fn describe_score(score: i32, depth: u32) -> String {
+    if score.abs() >= MATE_SCORE {
+        let winner = if score > 0 { "white" } else { "black" };
+        format!("depth {}, finds a forced checkmate for {}", depth, winner)
+    } else {
+        format!("depth {}, evaluation {:+.2} pawns for white", depth, score as f64 / 100.0)
     }
 }
